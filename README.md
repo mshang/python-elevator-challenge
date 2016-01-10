@@ -29,9 +29,9 @@ A user can interact with the elevator in two ways. She can call the elevator by 
 The logic delegate can respond by setting the elevator to move up, move down, or stop. It can also read the current floor and movement direction of the elevator. These actions are accessed through `Callbacks`, a mediator provided by the `Elevator` class to the logic delegate.
 
     >>> class Elevator(Elevator):
-    ...     def __init__(self, logic_delegate):
-    ...         self._current_floor = 1
-    ...         print "1...",
+    ...     def __init__(self, logic_delegate, starting_floor=1):
+    ...         self._current_floor = starting_floor
+    ...         print "%s..." % starting_floor,
     ...         self._motor_direction = None
     ...         self._logic_delegate = logic_delegate
     ...         self._logic_delegate.callbacks = self.Callbacks(self)
@@ -118,6 +118,8 @@ The elevator went up to the fifth floor. Now, the passenger gets on and presses 
 More Tests
 ----------
 
+Called twice
+
     >>> elevator = Elevator(ElevatorLogic())
     1...
     >>> elevator.call(3, UP)
@@ -126,6 +128,8 @@ More Tests
     2... 3...
     >>> elevator.run_until_stopped()
     4... 5...
+
+Called twice, switch order
 
     >>> elevator = Elevator(ElevatorLogic())
     1...
@@ -136,4 +140,14 @@ More Tests
     >>> elevator.run_until_stopped()
     4... 5...
 
+Called twice, above and below
+
+    >>> elevator = Elevator(ElevatorLogic(), 3)
+    3...
+    >>> elevator.call(2, UP)
+    >>> elevator.call(4, UP)
+    >>> elevator.run_until_stopped()
+    2...
+    >>> elevator.run_until_stopped()
+    3... 4...
 
