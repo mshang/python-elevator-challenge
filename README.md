@@ -93,7 +93,7 @@ Business Logic
 
 As for the business logic, an example implementation is provided in the `elevator.py` file in this project.
 
-    >>> from elevator_solution import ElevatorLogic
+    >>> from elevator import ElevatorLogic
 
 As provided, it doesn't pass the tests in this document. Your challenge is to fix it so that it does. To run the tests, run this in your shell:
 
