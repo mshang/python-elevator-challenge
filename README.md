@@ -1,25 +1,28 @@
-Python Elevator Challenge
-=========================
+# So You Think You Can Program An Elevator
 
-So You Think You Can Program An Elevator
-----------------------------------------
+Many of us ride elevators every day. We feel like we understand how they work, how they decide where to go. If you were asked to put it into words, you might say that an elevator goes wherever it's told, and in doing so goes as far in one direction as it can before turning around. Sounds simple, right? Can you put it into code?
 
-Many of us ride elevators every day. We intuitively feel like we have a good grasp on them. We understand the how elevators decide where to go. But say you wanted to express this algorithm in code. How would you go about it?
+In this challenge, you are asked to implement the business logic for a simplified elevator model in Python. We'll ignore a lot of what goes into a real world elevator, like the physics of a moving elevator, maintenance overrides, and optimizations for traffic patterns. All you are asked to do is to decide whether the elevator should go up, go down, or stop.
 
-Test Harness
-------------
+How does the challenge work? The simulator and test harness are laid out in this document, followed by several examples. All of this can be run in an actual Python interpreter using Python's built-in `doctest` functionality, which extracts the code in this document and runs it.
 
-Lets consider a simplified model of an elevator. Like all elevators, it can go up or down. We define constants for these. This elevator also happens to be in a building with six floors.
+A naive implementation of the business logic is provided in the `elevator.py` file in this project. If you run `doctest` using the provided implementation, several examples fail to produce the expected output. Your challenge is to fix that implementation until all of the examples pass.
+
+Open a pull request with your solution. Good luck! Have fun!
+
+## Test Harness
+
+Like all elevators, ours can go up and down. We define constants for these. The elevator also happens to be in a building with six floors.
 
     >>> UP = 1
     >>> DOWN = 2
     >>> FLOOR_COUNT = 6
 
-We will make an `Elevator` class that simulates an elevator. This will delegate to another class which contains the elevator business logic, i.e. deciding what the elevator should do. Your challenge is to implement the business logic.
+We will make an `Elevator` class that simulates an elevator. It will delegate to another class which contains the elevator business logic, i.e. deciding what the elevator should do. Your challenge is to implement this business logic class.
 
 ### User actions
 
-A user can interact with the elevator in two ways. She can call the elevator by pressing the up or down  button on any floor, and she can select a destination floor by pressing the button for that floor on the panel in the elevator. Both of these actions get passed straight through to the logic delegate.
+A user can interact with the elevator in two ways. She can call the elevator by pressing the up or down  button on any floor, and she can select a destination floor by pressing the button for that floor on the panel in the elevator. Both of these actions are passed straight through to the logic delegate.
 
     >>> class Elevator(object):
     ...     def call(self, floor, direction):
@@ -58,7 +61,7 @@ The logic delegate can respond by setting the elevator to move up, move down, or
 
 ### Simulation
 
-The simulation runs in steps. Every time step consists of either a change of floor, or a pause at a floor. Either way, the business logic delegate gets notified. Along the way, we print out the movements of the elevator so that we can keep track of it. We also define a few helper methods.
+The simulation runs in steps. Each time step consists of the elevator moving a single floor, or pausing at a floor. Either way, the business logic delegate gets notified. Along the way, we print out the movements of the elevator so that we can keep track of it. We also define a few helper methods that advance the simulation to points of interest, for ease of testing.
 
     >>> class Elevator(Elevator):
     ...     def step(self):
@@ -88,8 +91,7 @@ The simulation runs in steps. Every time step consists of either a change of flo
 
 That's it for the framework.
 
-Business Logic
---------------
+## Business Logic
 
 As for the business logic, an example implementation is provided in the `elevator.py` file in this project.
 
@@ -112,7 +114,7 @@ Somebody on the fifth floor wants to go down.
 
     >>> e.call(5, DOWN)
 
-Keep in mind that the simulation won't actually advance until we call `step` or one of the `run_*` methods.
+Keep in mind that the simulation won't actually advance until we call `step` or one of the `run_until_*` methods.
 
     >>> e.run_until_stopped()
     2... 3... 4... 5...
@@ -203,7 +205,7 @@ If nobody wants to go further up though, the elevator can turn around.
     >>> e.run_until_stopped()
     3... 2...
 
-If the elevator is called in both directions at that floor, it must wait once for each direction.
+If the elevator is called in both directions at that floor, it must wait once for each direction. You may have seen this too. Some elevators will close their doors and reopen them to indicate that they have changed direction.
 
     >>> e = Elevator(ElevatorLogic())
     1...
@@ -265,10 +267,9 @@ On the other hand, if the elevator is already at, or has passed the floor in que
     >>> e.run_until_stopped()  # service e.call(2, UP)
     4... 3... 2...
 
-Fuzz testing
-------------
+## Fuzz testing
 
-No amount of legal moves should compel the elevator to enter an illegal state, which would be caught by asserts.
+No amount of legal moves should compel the elevator to enter an illegal state. Here, we run a bunch of random requests against the simulator to make sure that no asserts are triggered.
 
     >>> import random
     >>> e = Elevator(ElevatorLogic())
@@ -285,8 +286,7 @@ No amount of legal moves should compel the elevator to enter an illegal state, w
     - ...
 
 
-More Examples
--------------
+## More Examples
 
 The rest of these examples may be useful for catching bugs. They are meant to be run via doctest, so they may not be very interesting to read through.
 
