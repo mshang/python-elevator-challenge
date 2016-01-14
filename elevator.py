@@ -26,9 +26,11 @@ class ElevatorLogic(object):
         self.callbacks = None
         self.stop_list = []
         self.back_stop_list = []
+        self.waiting = None
+        self.trend = None
+        self.request_set = set([])
 
     def on_called(self, floor, direction):
-        global DOWN
         """
         This is called when somebody presses the up or down button to call the elevator.
         This could happen at any time, whether or not the elevator is moving.
@@ -37,28 +39,35 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        des_change_flag = (floor > self.destination_floor) ^ (direction == DOWN) and (direction == DOWN) ^ (
-            self.callbacks.current_floor < self.destination_floor
-        ) or self.callbacks.current_floor == self.destination_floor
-        back_flag = self.destination_direction != self.callbacks.motor_direction and self.destination_direction and not\
-            ((self.destination_floor > self.back_for) ^ (self.callbacks.current_floor < self.destination_floor))
+        moving_direction = 1 if self.callbacks.current_floor < self.destination_floor else 2
+        moving_further = (floor < self.destination_floor) and (direction == DOWN) \
+                         or (floor > self.destination_floor) and (direction == UP)
+        des_change_flag = moving_further and moving_direction == direction or floor == self.destination_floor
+        back_flag = self.destination_direction and (self.destination_direction != moving_direction) \
+                    and ((self.destination_floor > self.back_for) ^ (moving_direction == UP) or not self.back_for)
         if des_change_flag or not self.destination_floor:
             if back_flag:
                 self.back_for = self.destination_floor
                 self.back_for_direction = self.destination_direction
-            self.stop_list.append(floor)
-            if self.destination_floor in self.stop_list and (self.destination_direction == DOWN) ^ (
-                        self.callbacks.current_floor > self.destination_floor):
+            if self.destination_floor in self.stop_list and (self.destination_direction != moving_direction):
                 index = self.stop_list.index(self.destination_floor)
                 self.back_stop_list.append(self.stop_list.pop(index))
-            self.destination_floor = floor
-            self.destination_direction = direction
-        elif (direction == DOWN) ^ (self.callbacks.current_floor < self.destination_floor):
+            if moving_direction != direction and moving_direction == self.destination_direction:
+                self.back_for = floor
+                self.back_for_direction = direction
+            else:
+                self.destination_floor = floor
+                self.stop_list.append(floor)
+                self.destination_direction = direction
+        elif direction == moving_direction:
             self.stop_list.append(floor)
         else:
             self.back_stop_list.append(floor)
+        self.waiting = False
+        self.request_set.add((floor, direction))
 
     def on_floor_selected(self, floor):
+
         """
         This is called when somebody on the elevator chooses a floor.
         This could happen at any time, whether or not the elevator is moving.
@@ -66,10 +75,17 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
-        des_change_flag = (floor > self.destination_floor) ^ (self.callbacks.current_floor > self.destination_floor) \
-                          or self.callbacks.current_floor == self.destination_floor
-        back_flag = self.destination_direction != self.callbacks.motor_direction and self.destination_direction and not\
-            ((self.destination_floor > self.back_for) ^ (self.callbacks.current_floor < self.destination_floor))
+        moving_direction = 2 if self.callbacks.current_floor > self.destination_floor else 1
+        floor_to_des = 2 if floor > self.destination_floor else 1
+        des_change_flag = floor_to_des != moving_direction or self.callbacks.current_floor == self.destination_floor
+        back_flag = self.destination_direction and ((self.destination_floor > self.back_for) ^ (moving_direction == UP))
+        if self.waiting and (self.destination_direction == DOWN) ^ (floor < self.callbacks.current_floor
+                                                                    ) and floor != self.callbacks.current_floor:
+            self.destination_direction = self.back_for_direction
+            self.request_set = self.request_set.difference({(self.destination_floor, self.destination_direction)})
+            self.back_for_direction = None
+            self.back_for = None
+            return
         if des_change_flag or not self.destination_floor:
             if back_flag:
                 self.back_for = self.destination_floor
@@ -82,6 +98,8 @@ class ElevatorLogic(object):
             self.destination_floor = floor
         else:
             self.stop_list.append(floor)
+        self.waiting = False
+        self.request_set.add((floor, None))
 
     def on_floor_changed(self):
         """
@@ -89,6 +107,11 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         if self.callbacks.current_floor in self.stop_list:
+            self.trend = self.callbacks.motor_direction
+            self.request_set = self.request_set.difference({(self.callbacks.current_floor, None)})
+            self.request_set = self.request_set.difference({(self.callbacks.current_floor, self.trend)})
+            if self.callbacks.current_floor == self.destination_floor and self.destination_direction:
+                self.waiting = True
             self.callbacks.motor_direction = None
             self.stop_list.remove(self.callbacks.current_floor)
 
