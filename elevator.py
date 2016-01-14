@@ -40,7 +40,12 @@ class ElevatorLogic(object):
         des_change_flag = (floor > self.destination_floor) ^ (direction == DOWN) and (direction == DOWN) ^ (
             self.callbacks.current_floor < self.destination_floor
         ) or self.callbacks.current_floor == self.destination_floor
+        back_flag = self.destination_direction != self.callbacks.motor_direction and self.destination_direction and not\
+            ((self.destination_floor > self.back_for) ^ (self.callbacks.current_floor < self.destination_floor))
         if des_change_flag or not self.destination_floor:
+            if back_flag:
+                self.back_for = self.destination_floor
+                self.back_for_direction = self.destination_direction
             self.stop_list.append(floor)
             if self.destination_floor in self.stop_list and (self.destination_direction == DOWN) ^ (
                         self.callbacks.current_floor > self.destination_floor):
