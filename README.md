@@ -18,6 +18,7 @@ Like all elevators, ours can go up and down. We define constants for these. The 
 >>> UP = 1
 >>> DOWN = 2
 >>> FLOOR_COUNT = 6
+
 ```
 
 We will make an `Elevator` class that simulates an elevator. It will delegate to another class which contains the elevator business logic, i.e. deciding what the elevator should do. Your challenge is to implement this business logic class.
@@ -33,6 +34,7 @@ A user can interact with the elevator in two ways. She can call the elevator by 
 ... 
 ...     def select_floor(self, floor):
 ...         self._logic_delegate.on_floor_selected(floor)
+
 ```
 
 ### Elevator actions
@@ -63,6 +65,7 @@ The logic delegate can respond by setting the elevator to move up, move down, or
 ...         @motor_direction.setter
 ...         def motor_direction(self, direction):
 ...             self._outer._motor_direction = direction
+
 ```
 
 ### Simulation
@@ -95,6 +98,7 @@ The simulation runs in steps. Each time step consists of the elevator moving a s
 ...             self.step()
 ...             if self._current_floor == floor: break
 ...         else: assert False
+
 ```
 
 That's it for the framework.
