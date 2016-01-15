@@ -44,12 +44,11 @@ class ElevatorLogic(object):
         moving_further = (floor < self.destination_floor) and (moving_direction == DOWN) \
                 or (floor > self.destination_floor) and (moving_direction == UP) or not self.destination_floor
         # moving_further = moving_further if moving_further == UP else not moving_further
-        floor_to_des = 2 if floor > self.destination_floor else 1
         des_change_flag = moving_further or floor == self.destination_floor
         back_flag = (self.destination_direction != moving_direction) \
                     and ((self.destination_floor > self.back_for) ^ (moving_direction == UP) or not self.back_for)
         if des_change_flag or not self.destination_floor:
-            if back_flag:
+            if back_flag and (floor != self.destination_floor or direction != self.destination_direction):
                 self.back_for = self.destination_floor
                 self.back_for_direction = self.destination_direction
             if self.destination_floor in self.stop_list and (self.destination_direction != moving_direction):
@@ -63,6 +62,11 @@ class ElevatorLogic(object):
                 self.destination_floor = floor
                 self.stop_list.append(floor)
                 self.destination_direction = direction
+        elif self.trend == UP and floor > self.callbacks.current_floor\
+                or self.trend == DOWN and floor < self.callbacks.current_floor:
+            self.destination_floor = floor
+            self.stop_list.append(floor)
+            self.destination_direction = direction
         elif moving_direction != direction or (floor < self.callbacks.current_floor) ^ (moving_direction == DOWN) or\
                 floor == self.callbacks.current_floor:
             self.back_for = floor
@@ -86,16 +90,21 @@ class ElevatorLogic(object):
         """
         moving_direction = 2 if self.callbacks.current_floor > self.destination_floor else 1
         floor_to_des = 2 if floor > self.destination_floor else 1
-        des_change_flag = floor_to_des != moving_direction or self.callbacks.current_floor == self.destination_floor
+        des_change_flag = floor_to_des != moving_direction or self.callbacks.current_floor == self.destination_floor \
+                          or not self.destination_floor
         back_flag = self.destination_direction and (
             (self.destination_floor > self.back_for) ^ (moving_direction == UP)\
                 or not self.back_for) and self.callbacks.current_floor != self.destination_floor
         if self.waiting and (self.destination_direction == DOWN) ^ (floor < self.callbacks.current_floor
                                                                     ) and floor != self.callbacks.current_floor:
             self.destination_direction = self.back_for_direction
-            self.request_set = self.request_set.difference({(self.destination_floor, self.destination_direction)})
+            self.destination_floor = self.back_for
+            self.stop_list.append(self.back_for)
+            # self.request_set = self.request_set.difference({(self.destination_floor, self.destination_direction)})
             self.back_for_direction = None
             self.back_for = None
+            if not self.destination_floor:
+                self.waiting = False
             return
         if des_change_flag or not self.destination_floor:
             if back_flag:
@@ -136,9 +145,11 @@ class ElevatorLogic(object):
         """
         if self.back_for and self.callbacks.current_floor == self.destination_floor:
             self.destination_floor = self.back_for
+            self.destination_direction = self.back_for_direction
             self.stop_list = self.back_stop_list
             self.back_stop_list = []
-        if self.destination_floor > self.callbacks.current_floor:
-            self.callbacks.motor_direction = UP
-        elif self.destination_floor < self.callbacks.current_floor:
-            self.callbacks.motor_direction = DOWN
+        if self.destination_floor:
+            if self.destination_floor > self.callbacks.current_floor:
+                self.callbacks.motor_direction = UP
+            elif self.destination_floor < self.callbacks.current_floor:
+                self.callbacks.motor_direction = DOWN
