@@ -39,14 +39,14 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        tmp = self.callbacks.current_floor < self.destination_floor
-        moving_direction = 1 if tmp else 2
+        moving_direction = 1 if self.callbacks.current_floor < self.destination_floor else 2
         moving_further = (floor < self.destination_floor) and (moving_direction == DOWN) \
                 or (floor > self.destination_floor) and (moving_direction == UP) or not self.destination_floor
         # moving_further = moving_further if moving_further == UP else not moving_further
         des_change_flag = moving_further or floor == self.destination_floor
-        back_flag = (self.destination_direction != moving_direction) \
-                    and ((self.destination_floor > self.back_for) ^ (moving_direction == UP) or not self.back_for)
+        back_flag = (self.destination_direction != moving_direction and not self.callbacks.current_floor ==
+                     self.destination_floor) and ((self.destination_floor > self.back_for) ^ (moving_direction == UP)\
+                                                  or not self.back_for)
         if des_change_flag or not self.destination_floor:
             if back_flag and (floor != self.destination_floor or direction != self.destination_direction):
                 self.back_for = self.destination_floor
@@ -128,14 +128,17 @@ class ElevatorLogic(object):
         This lets you know that the elevator has moved one floor up or down.
         You should decide whether or not you want to stop the elevator.
         """
-        if self.callbacks.current_floor in self.stop_list:
+        if self.callbacks.current_floor in self.stop_list + [1, FLOOR_COUNT]:
             self.trend = self.callbacks.motor_direction
             self.request_set = self.request_set.difference({(self.callbacks.current_floor, None)})
             self.request_set = self.request_set.difference({(self.callbacks.current_floor, self.trend)})
             if self.callbacks.current_floor == self.destination_floor and self.destination_direction:
                 self.waiting = True
             self.callbacks.motor_direction = None
-            self.stop_list.remove(self.callbacks.current_floor)
+            try:
+                self.stop_list.remove(self.callbacks.current_floor)
+            except ValueError:
+                pass
 
     def on_ready(self):
         """
