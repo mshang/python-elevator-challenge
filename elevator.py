@@ -39,9 +39,10 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        moving_direction = 1 if self.callbacks.current_floor < self.destination_floor else 2
+        tmp = self.callbacks.current_floor < self.destination_floor
+        moving_direction = 1 if tmp else 2
         moving_further = (floor < self.destination_floor) and (moving_direction == DOWN) \
-                         or (floor > self.destination_floor) and (moving_direction == UP)
+                or (floor > self.destination_floor) and (moving_direction == UP) or not self.destination_floor
         # moving_further = moving_further if moving_further == UP else not moving_further
         floor_to_des = 2 if floor > self.destination_floor else 1
         des_change_flag = moving_further or floor == self.destination_floor
@@ -57,11 +58,13 @@ class ElevatorLogic(object):
             if moving_direction != direction and moving_direction == self.destination_direction:
                 self.back_for = floor
                 self.back_for_direction = direction
+                self.back_stop_list.append(floor)
             else:
                 self.destination_floor = floor
                 self.stop_list.append(floor)
                 self.destination_direction = direction
-        elif moving_direction != floor_to_des or floor == self.callbacks.current_floor:
+        elif moving_direction != direction or (floor < self.callbacks.current_floor) ^ (moving_direction == DOWN) or\
+                floor == self.callbacks.current_floor:
             self.back_for = floor
             self.back_for_direction = direction
             self.back_stop_list.append(floor)
@@ -103,6 +106,8 @@ class ElevatorLogic(object):
                         self.callbacks.current_floor > self.destination_floor):
                 index = self.stop_list.index(self.destination_floor)
                 self.back_stop_list.append(self.stop_list.pop(index))
+            if floor != self.destination_floor:
+                self.destination_direction = None
             self.destination_floor = floor
         else:
             self.stop_list.append(floor)
