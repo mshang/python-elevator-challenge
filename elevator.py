@@ -46,11 +46,13 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
         current_floor = self.callbacks.current_floor
-        next_direction, _ = on_ready_impl(
+        next_direction, _, _ = on_ready_impl(
           current_floor, self.direction, self.destinations)
-        if (next_direction == UP and floor < current_floor or
-            next_direction == DOWN and floor > current_floor):
-          return
+        if next_direction == self.direction:
+          if (next_direction == UP and floor < current_floor or
+              next_direction == DOWN and floor > current_floor):
+            # print 'ignored', current_floor, floor, next_direction
+            return
         self.destinations[floor][OUT] = 1
 
     def on_floor_changed(self):
@@ -60,8 +62,13 @@ class ElevatorLogic(object):
         """
         floor = self.callbacks.current_floor
         if floor == self.destination_floor:
+          if self.destinations[floor][self.direction]:
+            self.destinations[floor][self.direction] = 0
+          elif self.destinations[floor][3 - self.direction]:
+            self.direction = 3 - self.direction
+            self.destinations[floor][self.direction] = 0
+          self.destinations[floor][OUT] = 0
           self.callbacks.motor_direction = None
-          self.destinations[floor] = {UP: 0, DOWN: 0, OUT: 0}
 
     def on_ready(self):
         """
@@ -70,9 +77,14 @@ class ElevatorLogic(object):
         time to actually move, if necessary.
         """
         # print 'on_ready'
-        direction, destination_floor = on_ready_impl(
-          self.callbacks.current_floor, self.direction, self.destinations)
-        self.callbacks.motor_direction = self.direction = direction
+        current_floor = self.callbacks.current_floor
+        direction, destination_floor, motor_direction = on_ready_impl(
+          current_floor, self.direction, self.destinations)
+        self.callbacks.motor_direction = motor_direction
+        self.direction = direction
+        if motor_direction == None and self.direction != None:
+          self.destinations[current_floor][OUT] = 0
+          self.destinations[current_floor][self.direction] = 0
         self.destination_floor = destination_floor
 
 
@@ -81,18 +93,24 @@ def on_ready_impl(floor, direction, destinations):
   if direction == UP or direction is None:
     for i in range(floor + 1, FLOOR_COUNT + 1):
       if destinations[i][UP] or destinations[i][OUT]:
-        return UP, i
+        return UP, i, UP
 
     for i in range(floor + 1, FLOOR_COUNT + 1):
       if destinations[i][DOWN]:
-        return UP, i
+        return UP, i, UP
+
+    if destinations[floor][DOWN]:
+      return DOWN, floor, None
 
   for i in range(floor - 1, 0, -1):
     if destinations[i][DOWN] or destinations[i][OUT]:
-      return DOWN, i
+      return DOWN, i, DOWN
 
   for i in range(floor - 1, 0, -1):
     if destinations[i][UP]:
-      return DOWN, i
+      return DOWN, i, DOWN
 
-  return None, None
+  if destinations[floor][UP]:
+    return UP, floor, None
+
+  return None, None, None
