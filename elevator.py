@@ -93,7 +93,7 @@ def on_ready_impl(floor, direction, destinations):
       if destinations[i][UP] or destinations[i][OUT]:
         return UP, i, UP
 
-    for i in range(floor + 1, FLOOR_COUNT + 1):
+    for i in range(FLOOR_COUNT, floor, -1):
       if destinations[i][DOWN]:
         return UP, i, UP
 
