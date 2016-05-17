@@ -58,8 +58,17 @@ class ElevatorLogic(object):
         """
         # if self.destination_floor == self.callbacks.current_floor:
         floor = self.callbacks.current_floor
-        if self.destinations[floor][self.direction] or self.destinations[floor][OUT]:
-            self.callbacks.motor_direction = None
+        try:
+          # if (
+            # self.destinations[floor][self.direction] or self.destinations[floor][OUT] or
+            # floor == FLOOR_COUNT)
+          if floor == self.destination_floor:
+              self.callbacks.motor_direction = None
+        except:
+          print floor
+          print len(self.destinations)
+          # print self.destinations[floor]
+          print self.direction
 
     def on_ready(self):
         """
@@ -73,12 +82,14 @@ class ElevatorLogic(object):
           for i in range(floor + 1, FLOOR_COUNT + 1):
             # print 'trying ', i, self.destinations[i].itervalues()
             if self.destinations[i][UP] or self.destinations[i][OUT]:
+              self.destination_floor = i
               self.callbacks.motor_direction = UP
               return
 
           for i in range(floor + 1, FLOOR_COUNT + 1):
             # print 'trying ', i, self.destinations[i].itervalues()
             if self.destinations[i][DOWN]:
+              self.destination_floor = i
               self.callbacks.motor_direction = UP
               return
 
@@ -86,16 +97,19 @@ class ElevatorLogic(object):
         for i in range(floor - 1, 0, -1):
           # print 'trying ', i
           if self.destinations[i][DOWN] or self.destinations[i][OUT]:
+            self.destination_floor = i
             self.callbacks.motor_direction = DOWN
             return
 
         for i in range(floor - 1, 0, -1):
           # print 'trying ', i
           if self.destinations[i][UP]:
+            self.destination_floor = i
             self.callbacks.motor_direction = DOWN
             return
 
         self.direction = UP
+        self.destination_floor = None
         self.callbacks.motor_direction = None
 
         # if self.destination_floor > self.callbacks.current_floor:
