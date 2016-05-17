@@ -78,7 +78,8 @@ class ElevatorLogic(object):
         """
         # print 'on_ready'
         floor = self.callbacks.current_floor
-        if self.direction == UP:
+        if self.direction == UP or self.direction is None:
+          self.direction = UP
           for i in range(floor + 1, FLOOR_COUNT + 1):
             # print 'trying ', i, self.destinations[i].itervalues()
             if self.destinations[i][UP] or self.destinations[i][OUT]:
@@ -108,7 +109,7 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = DOWN
             return
 
-        self.direction = UP
+        self.direction = None
         self.destination_floor = None
         self.callbacks.motor_direction = None
 
