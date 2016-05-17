@@ -74,7 +74,6 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-        # print 'on_ready'
         current_floor = self.callbacks.current_floor
         direction, destination_floor, motor_direction = on_ready_impl(
           current_floor, self.direction, self.destinations)
