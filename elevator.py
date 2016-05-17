@@ -19,7 +19,7 @@ class ElevatorLogic(object):
 
     def __init__(self):
         # Feel free to add any instance variables you want.
-        # self.destination_floor = None
+        self.destination_floor = None
         self.callbacks = None
         self.destinations = []
         for i in range(FLOOR_COUNT + 1):
@@ -48,6 +48,10 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
+        current_floor = self.callbacks.current_floor
+        if (self.direction == UP and floor < current_floor or
+            self.direction == DOWN and floor > current_floor):
+          return
         self.destinations[floor][OUT] = 1
         # self.destination_floor = floor
 
