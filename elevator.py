@@ -50,6 +50,7 @@ class ElevatorLogic(object):
             self.direction == DOWN and floor > current_floor):
           return
         self.destinations[floor][OUT] = 1
+        self.on_ready()
 
     def on_floor_changed(self):
         """
