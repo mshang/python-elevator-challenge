@@ -36,6 +36,7 @@ class ElevatorLogic(object):
         direction: the direction the caller wants to go, up or down
         """
         self.destinations[floor][direction] = 1
+        self.on_ready()
 
     def on_floor_selected(self, floor):
         """
