@@ -47,8 +47,8 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
         current_floor = self.callbacks.current_floor
-        if (self.direction == UP and floor < current_floor or
-            self.direction == DOWN and floor > current_floor):
+        if (self.direction == UP and floor <= current_floor or
+            self.direction == DOWN and floor >= current_floor):
           return
         self.destinations[floor][OUT] = 1
         self.on_ready()
