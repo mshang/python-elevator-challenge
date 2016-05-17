@@ -46,13 +46,9 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
         current_floor = self.callbacks.current_floor
-        next_direction, _, _ = on_ready_impl(
-          current_floor, self.direction, self.destinations)
-        if next_direction == self.direction:
-          if (next_direction == UP and floor < current_floor or
-              next_direction == DOWN and floor > current_floor):
-            # print 'ignored', current_floor, floor, next_direction
-            return
+        if (self.direction == UP and floor < current_floor or
+            self.direction == DOWN and floor > current_floor):
+          return
         self.destinations[floor][OUT] = 1
 
     def on_floor_changed(self):
