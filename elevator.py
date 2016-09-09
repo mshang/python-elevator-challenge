@@ -1,5 +1,6 @@
 UP = 1
 DOWN = 2
+OUT = 0
 FLOOR_COUNT = 6
 
 class ElevatorLogic(object):
@@ -18,7 +19,6 @@ class ElevatorLogic(object):
 
     def __init__(self):
         # Feel free to add any instance variables you want.
-        self.destination_floor = None
         self.callbacks = None
         self.requests = []
 
@@ -31,8 +31,7 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        self.destination_floor = floor
-        self.requests.append(floor)
+        self.requests.append({"floor": floor, "direction": direction})
 
     def on_floor_selected(self, floor):
         """
@@ -42,8 +41,11 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
-        self.destination_floor = floor
-        self.requests.append(floor)
+        if len(self.requests) != 0:
+            next_floor = self.requests[0]["floor"]
+            if floor < next_floor:
+                return
+        self.requests.append({"floor": floor, "direction": OUT})
 
     def on_floor_changed(self):
         """
@@ -52,12 +54,19 @@ class ElevatorLogic(object):
         """
         floor = self.callbacks.current_floor
 
-        # if len(self.requests) == 0 :
-        #     self.callbacks.motor_direction = None
-        #     return
-        if floor in self.requests :
-            self.requests.remove(floor)
-            self.callbacks.motor_direction = None
+        # print "Requests: %s" % self.requests
+        for request in self.requests :
+            if floor == request["floor"] :
+                age = self.should_stop_at_floor(request)
+                if age :
+                    self.requests.remove(request)
+                    self.callbacks.motor_direction = None
+
+    def should_stop_at_floor(self, request):
+        final_floor = self.callbacks.current_floor == FLOOR_COUNT - 1
+        wrong_way = self.callbacks.motor_direction == request["direction"]
+        out_request = request["direction"] == OUT
+        return (wrong_way or out_request) or final_floor
 
     def on_ready(self):
         """
@@ -65,8 +74,16 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-        floor = self.requests[0]
+        
+        if len(self.requests) == 0:
+            return
+        request = self.requests[0]
+        floor = request["floor"]
+
         if floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
         elif floor < self.callbacks.current_floor:
             self.callbacks.motor_direction = DOWN
+
+    def should_move(self):
+        return len(self.requests) == 0
