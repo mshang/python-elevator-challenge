@@ -27,7 +27,7 @@ A user can interact with the elevator in two ways. She can call the elevator by 
     >>> class Elevator(object):
     ...     def call(self, floor, direction):
     ...         self._logic_delegate.on_called(floor, direction)
-    ... 
+    ...
     ...     def select_floor(self, floor):
     ...         self._logic_delegate.on_floor_selected(floor)
 
@@ -42,19 +42,19 @@ The logic delegate can respond by setting the elevator to move up, move down, or
     ...         self._motor_direction = None
     ...         self._logic_delegate = logic_delegate
     ...         self._logic_delegate.callbacks = self.Callbacks(self)
-    ... 
+    ...
     ...     class Callbacks(object):
     ...         def __init__(self, outer):
     ...             self._outer = outer
-    ... 
+    ...
     ...         @property
     ...         def current_floor(self):
     ...             return self._outer._current_floor
-    ... 
+    ...
     ...         @property
     ...         def motor_direction(self):
     ...             return self._outer._motor_direction
-    ... 
+    ...
     ...         @motor_direction.setter
     ...         def motor_direction(self, direction):
     ...             self._outer._motor_direction = direction
@@ -68,14 +68,14 @@ The simulation runs in steps. Each time step consists of the elevator moving a s
     ...        delta = 0
     ...        if self._motor_direction == UP: delta = 1
     ...        elif self._motor_direction == DOWN: delta = -1
-    ... 
+    ...
     ...        if delta:
     ...            self._current_floor = self._current_floor + delta
     ...            print "%s..." % self._current_floor,
     ...            self._logic_delegate.on_floor_changed()
     ...        else:
     ...            self._logic_delegate.on_ready()
-    ... 
+    ...
     ...        assert self._current_floor >= 1
     ...        assert self._current_floor <= FLOOR_COUNT
     ...     
@@ -564,4 +564,3 @@ If other direction is not cleared, come back.
     >>> e.run_until_stopped()
     4...
     >>> e.run_until_stopped()
-
