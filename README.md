@@ -137,7 +137,6 @@ Even though the first floor was selected first, the elevator services the call a
     >>> e.run_until_stopped()
     2... 1...
 
-
 ### Directionality
 
 Elevators want to keep going in the same direction. An elevator will serve as many requests in one direction as it can before going the other way. For example, if an elevator is going up, it won't stop to pick up passengers who want to go down until it's done with everything that requires it to go up.
@@ -167,7 +166,6 @@ In fact, if a passenger tries to select a floor that contradicts the current dir
     2... 3...
     >>> e.select_floor(2)
 
-
 At this point the elevator is at the third floor. It's not finished going up because it's wanted at the fifth floor. Therefore, selecting the second floor goes against the current direction, so that request is ignored.
 
     >>> e.run_until_stopped()
@@ -179,3 +177,56 @@ Now it's done going up, so you can select the second floor.
     >>> e.select_floor(2)
     >>> e.run_until_stopped()
     4... 3... 2...
+
+### Changing direction
+
+The process of switching directions is a bit tricky. Normally, if an elevator going up stops at a floor and there are no more requests at higher floors, the elevator is free to switch directions right away. However, if the elevator was called to that floor by a user indicating that she wants to go up, the elevator is bound to consider itself going up.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(2, DOWN)
+    >>> e.call(4, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4...
+    >>> e.select_floor(5)
+    >>> e.run_until_stopped()
+    5...
+    >>> e.run_until_stopped()
+    4... 3... 2...
+
+If nobody wants to go further up though, the elevator can turn around.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(2, DOWN)
+    >>> e.call(4, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4...
+    >>> e.run_until_stopped()
+    3... 2...
+
+If the elevator is called in both directions at that floor, it must wait once for each direction. You may have seen this too. Some elevators will close their doors and reopen them to indicate that they have changed direction.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(5)
+    >>> e.call(5, UP)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+
+Here, the elevator considers itself to be going up, as it favors continuing in the direction it came from.
+
+    >>> e.select_floor(4)  # ignored
+    >>> e.run_until_stopped()
+
+Since nothing caused the elevator to move further up, it now waits for requests that cause it to move down.
+
+    >>> e.select_floor(6)  # ignored
+    >>> e.run_until_stopped()
+
+Since nothing caused the elevator to move down, the elevator now considers itself idle. It can move in either direction.
+
+    >>> e.select_floor(6)
+    >>> e.run_until_stopped()
+    6...

@@ -21,6 +21,7 @@ class ElevatorLogic(object):
         # Feel free to add any instance variables you want.
         self.callbacks = None
         self.requests = []
+        self.direction = None
 
     def on_called(self, floor, direction):
         """
@@ -41,11 +42,15 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
-        if len(self.requests) != 0:
-            next_floor = self.requests[0]["floor"]
-            if floor < next_floor:
-                return
-        self.requests.append({"floor": floor, "direction": OUT})
+        if (self.direction == UP and floor < self.callbacks.current_floor or self.direction == DOWN and floor > self.callbacks.current_floor):
+            return
+
+        self.requests.insert(0, {"floor": floor, "direction": OUT})
+
+    def has_requests(self):
+        return not self.has_no_requests()
+    def has_no_requests(self):
+        return len(self.requests) == 0
 
     def on_floor_changed(self):
         """
@@ -53,14 +58,14 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         floor = self.callbacks.current_floor
-
-        # print "Requests: %s" % self.requests
         for request in self.requests :
             if floor == request["floor"] :
                 age = self.should_stop_at_floor(request)
                 if age :
                     self.requests.remove(request)
                     self.callbacks.motor_direction = None
+                    if not self.has_requests():
+                        self.direction = None
 
     def should_stop_at_floor(self, request):
         final_floor = self.callbacks.current_floor == FLOOR_COUNT - 1
@@ -68,22 +73,39 @@ class ElevatorLogic(object):
         out_request = request["direction"] == OUT
         return (wrong_way or out_request) or final_floor
 
+    def remove_all_requests_at_floor(self, floor):
+        updated_list = []
+        for r in self.requests :
+            if not floor == r["floor"]:
+                updated_list.append(r)
+        self.requests = updated_list
+
     def on_ready(self):
         """
         This is called when the elevator is ready to go.
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-        
-        if len(self.requests) == 0:
+        if self.has_no_requests():
+            self.direction = None
             return
+
         request = self.requests[0]
         floor = request["floor"]
 
         if floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
+            self.direction = UP
         elif floor < self.callbacks.current_floor:
             self.callbacks.motor_direction = DOWN
+            self.direction = DOWN
+        else:
+            self.reverse_direction()
 
-    def should_move(self):
-        return len(self.requests) == 0
+    def reverse_direction(self):
+        if self.direction == DOWN:
+            self.direction = UP
+        elif self.direction == UP:
+            self.direction = DOWN
+        else:
+            self.direction = None
