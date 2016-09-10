@@ -32,7 +32,21 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
+        if self.at_or_passed_floor(floor):
+            if self.direction == UP:
+                direction = DOWN
+            elif self.direction == DOWN:
+                direction = UP
+
         self.requests.append({"floor": floor, "direction": direction})
+
+    def at_or_passed_floor(self, floor):
+        if self.direction == UP:
+            return floor <= self.callbacks.current_floor
+        elif self.direction == DOWN:
+            return floor >= self.callbacks.current_floor
+        else:
+            return floor == self.callbacks.current_floor
 
     def on_floor_selected(self, floor):
         """
@@ -43,6 +57,9 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
         if (self.direction == UP and floor < self.callbacks.current_floor or self.direction == DOWN and floor > self.callbacks.current_floor):
+            return
+
+        if floor == self.callbacks.current_floor:
             return
 
         self.requests.insert(0, {"floor": floor, "direction": OUT})

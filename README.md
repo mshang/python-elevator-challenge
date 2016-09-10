@@ -230,3 +230,39 @@ Since nothing caused the elevator to move down, the elevator now considers itsel
     >>> e.select_floor(6)
     >>> e.run_until_stopped()
     6...
+
+### En passant
+
+Keep in mind that a user could call the elevator or select a floor at any time. The elevator need not be stopped. If the elevator is called or a floor is selected before it has reached the floor in question, then the request should be serviced.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(6)
+    >>> e.run_until_floor(2)  # elevator is not stopped
+    2...
+    >>> e.select_floor(3)
+    >>> e.run_until_stopped()  # stops for above
+    3...
+    >>> e.run_until_floor(4)
+    4...
+    >>> e.call(5, UP)
+    >>> e.run_until_stopped()  # stops for above
+    5...
+
+On the other hand, if the elevator is already at, or has passed the floor in question, then the request should be treated like a request in the wrong direction. That is to say, a call is serviced later, and a floor selection is ignored.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(5)
+    >>> e.run_until_floor(2)
+    2...
+    >>> e.call(2, UP)  # missed the boat, come back later
+    >>> e.step()  # doesn't stop
+    3...
+    >>> e.select_floor(3)  # missed the boat, ignored
+    >>> e.step()  # doesn't stop
+    4...
+    >>> e.run_until_stopped()  # service e.select_floor(5)
+    5...
+    >>> e.run_until_stopped()  # service e.call(2, UP)
+    4... 3... 2...
