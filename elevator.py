@@ -32,14 +32,11 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
+        # if floor == 3:
+        #     import pdb; pdb.set_trace()
 
-        # import pdb; pdb.set_trace()
         if floor == self.callbacks.current_floor and (self.callbacks.motor_direction == None):
             return
-
-        # for request in self.requests:
-        #     if (request["floor"] == floor):
-        #         return
 
         if (self.direction == UP and floor > self.callbacks.current_floor) or (self.direction == DOWN and floor < self.callbacks.current_floor):
             self.requests.insert(0, {"floor": floor, "direction": direction})
@@ -54,6 +51,7 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
+
         if (self.direction == UP and floor < self.callbacks.current_floor or self.direction == DOWN and floor > self.callbacks.current_floor):
             return
 
@@ -81,19 +79,14 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         floor = self.callbacks.current_floor
-        # import pdb; pdb.set_trace()
-        for request in self.requests :
-            if floor == request["floor"] :
-                # import pdb; pdb.set_trace()
-                if self.should_stop_at_floor(request) :
-                    self.callbacks.motor_direction = None
-                    # self.remove_requests_at_floor(request["floor"])
+        for request in self.requests:
+            if floor == request["floor"]:
+                if self.should_stop_at_floor(request):
                     self.requests.remove(request)
-                    # import pdb; pdb.set_trace()
+                    direction = self.callbacks.motor_direction
+                    self.callbacks.motor_direction = None
                     if self.has_no_requests():
-                        # import pdb; pdb.set_trace()
                         self.direction = request["direction"]
-
 
     def should_stop_at_floor(self, request):
         return (self.servable_request(request) or not self.requests_beyond_current_floor())
@@ -105,6 +98,7 @@ class ElevatorLogic(object):
                 requests_for_removal.append(request)
         for r in requests_for_removal:
             self.requests.remove(r)
+        return len(requests_for_removal)
 
     def requests_beyond_current_floor(self):
         if self.direction == UP:
@@ -112,13 +106,11 @@ class ElevatorLogic(object):
                 if request["floor"] > self.callbacks.current_floor:
                     return True
             return False
-            # return self.any(request["floor"] > self.current_floor for request in self.requests)
         elif self.direction == DOWN:
             for request in self.requests:
                 if request["floor"] < self.callbacks.current_floor:
                     return True
             return False
-            # return any(request["floor"] < self.callbacks.current_floor for request in self.requests)
 
     def servable_request(self, request):
         requested_floor = request["floor"] == self.callbacks.current_floor
@@ -132,12 +124,8 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-
-        # if self.callbacks.current_floor == 4:
-        #     import pdb; pdb.set_trace()
-
         if self.has_no_requests():
-            self.direction = None
+            self.reverse_direction()
             return
 
         request = self.requests[0]
@@ -151,6 +139,9 @@ class ElevatorLogic(object):
             self.direction = DOWN
         else:
             self.reverse_direction()
+
+        if self.callbacks.motor_direction == None:
+            self.remove_requests_at_floor(self.callbacks.current_floor)
 
     def reverse_direction(self):
         if self.direction == DOWN:

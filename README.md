@@ -68,7 +68,7 @@ The simulation runs in steps. Each time step consists of the elevator moving a s
     ...        delta = 0
     ...        if self._motor_direction == UP: delta = 1
     ...        elif self._motor_direction == DOWN: delta = -1
-    ...        
+    ...
     ...        if delta:
     ...            self._current_floor = self._current_floor + delta
     ...            print "%s..." % self._current_floor,
@@ -266,6 +266,25 @@ On the other hand, if the elevator is already at, or has passed the floor in que
     5...
     >>> e.run_until_stopped()  # service e.call(2, UP)
     4... 3... 2...
+
+## Fuzz testing
+
+No amount of legal moves should compel the elevator to enter an illegal state. Here, we run a bunch of random requests against the simulator to make sure that no asserts are triggered.
+
+    >>> import random
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> try: print '-',  # doctest:+ELLIPSIS
+    ... finally:
+    ...     for i in range(100000):  
+    ...         r = random.randrange(6)
+    ...         if r == 0: e.call(
+    ...             random.randrange(FLOOR_COUNT) + 1,
+    ...             random.choice((UP, DOWN)))
+    ...         elif r == 1: e.select_floor(random.randrange(FLOOR_COUNT) + 1)
+    ...         else: e.step()
+    - ...
+
 
 ## More Examples
 
@@ -503,6 +522,43 @@ When changing directions, wait one step to clear current direction.
     2... 3... 4... 5...
     >>> e.select_floor(4)  # ignored
     >>> e.run_until_stopped()
+    >>> e.select_floor(6)  # ignored
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    4...
+    >>> e.run_until_stopped()
+
+Like above, but going in other direction.
+
+    >>> e = Elevator(ElevatorLogic(), 6)
+    6...
+    >>> e.select_floor(2)
+    >>> e.call(2, UP)
+    >>> e.call(2, DOWN)
+    >>> e.run_until_stopped()
+    5... 4... 3... 2...
+    >>> e.select_floor(3)  # ignored
+    >>> e.run_until_stopped()
+    >>> e.select_floor(1)  # ignored
+    >>> e.select_floor(3)
+    >>> e.run_until_stopped()
+    3...
+    >>> e.run_until_stopped()
+
+If other direction is not cleared, come back.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(5)
+    >>> e.call(5, UP)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.select_floor(6)
+    >>> e.run_until_stopped()
+    6...
+    >>> e.run_until_stopped()
+    5...
     >>> e.select_floor(6)  # ignored
     >>> e.select_floor(4)
     >>> e.run_until_stopped()
