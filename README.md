@@ -415,3 +415,65 @@ Two floors are selected, one above the current floor and one below. The first se
     >>> e.run_until_stopped()
     2...
     >>> e.run_until_stopped()
+
+Like above, but selected in reverse order.
+
+    >>> e = Elevator(ElevatorLogic(), 3)
+    3...
+    >>> e.select_floor(4)
+    >>> e.select_floor(2)
+    >>> e.run_until_stopped()
+    4...
+    >>> e.run_until_stopped()
+
+If the elevator is called to a floor going up, it should ignore a request to go down.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.select_floor(6)
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    6...
+    >>> e.run_until_stopped()
+
+Like above, but going in other direction.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.select_floor(6)
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    4...
+    >>> e.run_until_stopped()
+
+Elevator is called to a floor and a passenger also selects the same floor. The elevator should not go back to that floor twice.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, DOWN)
+    >>> e.select_floor(5)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    4...
+    >>> e.run_until_stopped()
+    
+Similarly, if the elevator is called at a floor where it is stopped, it should not go back later.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(3, UP)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.call(3, UP)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    4... 5...
+    >>> e.run_until_stopped()
