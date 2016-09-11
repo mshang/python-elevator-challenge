@@ -32,9 +32,19 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        # if floor == self.callbacks.current_floor:
-        #     return
-        self.requests.append({"floor": floor, "direction": direction})
+
+        # import pdb; pdb.set_trace()
+        if floor == self.callbacks.current_floor and (self.callbacks.motor_direction == None):
+            return
+
+        # for request in self.requests:
+        #     if (request["floor"] == floor):
+        #         return
+
+        if (self.direction == UP and floor > self.callbacks.current_floor) or (self.direction == DOWN and floor < self.callbacks.current_floor):
+            self.requests.insert(0, {"floor": floor, "direction": direction})
+        else:
+            self.requests.append({"floor": floor, "direction": direction})
 
     def on_floor_selected(self, floor):
         """
@@ -77,6 +87,7 @@ class ElevatorLogic(object):
                 # import pdb; pdb.set_trace()
                 if self.should_stop_at_floor(request) :
                     self.callbacks.motor_direction = None
+                    # self.remove_requests_at_floor(request["floor"])
                     self.requests.remove(request)
                     # import pdb; pdb.set_trace()
                     if self.has_no_requests():
@@ -86,6 +97,14 @@ class ElevatorLogic(object):
 
     def should_stop_at_floor(self, request):
         return (self.servable_request(request) or not self.requests_beyond_current_floor())
+
+    def remove_requests_at_floor(self, floor):
+        requests_for_removal = []
+        for request in self.requests:
+            if floor == request["floor"]:
+                requests_for_removal.append(request)
+        for r in requests_for_removal:
+            self.requests.remove(r)
 
     def requests_beyond_current_floor(self):
         if self.direction == UP:
@@ -113,7 +132,10 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-        # import pdb; pdb.set_trace()
+
+        # if self.callbacks.current_floor == 4:
+        #     import pdb; pdb.set_trace()
+
         if self.has_no_requests():
             self.direction = None
             return
@@ -135,5 +157,3 @@ class ElevatorLogic(object):
             self.direction = UP
         elif self.direction == UP:
             self.direction = DOWN
-        else:
-            self.direction = None

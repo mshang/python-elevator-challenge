@@ -464,7 +464,7 @@ Elevator is called to a floor and a passenger also selects the same floor. The e
     >>> e.run_until_stopped()
     4...
     >>> e.run_until_stopped()
-    
+
 Similarly, if the elevator is called at a floor where it is stopped, it should not go back later.
 
     >>> e = Elevator(ElevatorLogic())
@@ -476,4 +476,35 @@ Similarly, if the elevator is called at a floor where it is stopped, it should n
     >>> e.call(5, DOWN)
     >>> e.run_until_stopped()
     4... 5...
+    >>> e.run_until_stopped()
+
+Elevator is ready to change direction, new call causes it to keep going in same direction.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(2, DOWN)
+    >>> e.call(4, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4...
+    >>> e.call(5, DOWN)  # It's not too late.
+    >>> e.run_until_stopped()
+    5...
+    >>> e.run_until_stopped()
+    4... 3... 2...
+
+When changing directions, wait one step to clear current direction.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(5)
+    >>> e.call(5, UP)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.select_floor(4)  # ignored
+    >>> e.run_until_stopped()
+    >>> e.select_floor(6)  # ignored
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    4...
     >>> e.run_until_stopped()
