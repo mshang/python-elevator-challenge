@@ -32,11 +32,18 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
+        if floor == 1 and direction == DOWN:
+            return
+        if self.non_existent_floor(floor):
+            return
         if self.at_or_passed_floor(floor):
             if self.direction == UP:
                 direction = DOWN
             elif self.direction == DOWN:
                 direction = UP
+
+        # if self.has_no_requests():
+        #     import pdb; pdb.set_trace()
 
         self.requests.append({"floor": floor, "direction": direction})
 
@@ -56,6 +63,8 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
+        if self.non_existent_floor(floor):
+            return
         if (self.direction == UP and floor < self.callbacks.current_floor or self.direction == DOWN and floor > self.callbacks.current_floor):
             return
 
@@ -63,6 +72,9 @@ class ElevatorLogic(object):
             return
 
         self.requests.insert(0, {"floor": floor, "direction": OUT})
+
+    def non_existent_floor(self, floor):
+        return floor < 1 or floor > FLOOR_COUNT
 
     def has_requests(self):
         return not self.has_no_requests()
@@ -75,6 +87,7 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         floor = self.callbacks.current_floor
+
         for request in self.requests :
             if floor == request["floor"] :
                 age = self.should_stop_at_floor(request)
@@ -87,7 +100,8 @@ class ElevatorLogic(object):
     def should_stop_at_floor(self, request):
         final_floor = self.callbacks.current_floor == FLOOR_COUNT - 1
         wrong_way = self.callbacks.motor_direction == request["direction"]
-        out_request = request["direction"] == OUT
+        out_request = (request["direction"] == OUT)
+        # import pdb; pdb.set_trace()
         return (wrong_way or out_request) or final_floor
 
     def remove_all_requests_at_floor(self, floor):
