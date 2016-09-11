@@ -267,24 +267,6 @@ On the other hand, if the elevator is already at, or has passed the floor in que
     >>> e.run_until_stopped()  # service e.call(2, UP)
     4... 3... 2...
 
-## Fuzz testing
-
-No amount of legal moves should compel the elevator to enter an illegal state. Here, we run a bunch of random requests against the simulator to make sure that no asserts are triggered.
-
-    >>> import random
-    >>> e = Elevator(ElevatorLogic())
-    1...
-    >>> try: print '-',  # doctest:+ELLIPSIS
-    ... finally:
-    ...     for i in range(100000):  
-    ...         r = random.randrange(6)
-    ...         if r == 0: e.call(
-    ...             random.randrange(FLOOR_COUNT) + 1,
-    ...             random.choice((UP, DOWN)))
-    ...         elif r == 1: e.select_floor(random.randrange(FLOOR_COUNT) + 1)
-    ...         else: e.step()
-    - ...
-
 ## More Examples
 
 The rest of these examples may be useful for catching bugs. They are meant to be run via doctest, so they may not be very interesting to read through.
