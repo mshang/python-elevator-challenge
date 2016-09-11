@@ -284,3 +284,152 @@ No amount of legal moves should compel the elevator to enter an illegal state. H
     ...         elif r == 1: e.select_floor(random.randrange(FLOOR_COUNT) + 1)
     ...         else: e.step()
     - ...
+
+## More Examples
+
+The rest of these examples may be useful for catching bugs. They are meant to be run via doctest, so they may not be very interesting to read through.
+
+An elevator is called but nobody boards. It goes idle.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.run_until_stopped()
+    >>> e.run_until_stopped()
+
+The elevator is called at two different floors.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(3, UP)
+    >>> e.call(5, UP)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+Like above, but called in reverse order.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, UP)
+    >>> e.call(3, UP)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+The elevator is called at two different floors, but going the other direction.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(3, DOWN)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.run_until_stopped()
+    4... 3...
+
+The elevator is called at two different floors, going in opposite directions.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(3, UP)
+    >>> e.call(5, DOWN)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+Like above, but with directions reversed.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(3, DOWN)
+    >>> e.call(5, UP)
+    >>> e.run_until_stopped()
+    2... 3... 4... 5...
+    >>> e.run_until_stopped()
+    4... 3...
+
+The elevator is called at two different floors, one above the current floor and one below. It first goes to the floor where it was called first.
+
+    >>> e = Elevator(ElevatorLogic(), 3)
+    3...
+    >>> e.call(2, UP)
+    >>> e.call(4, UP)
+    >>> e.run_until_stopped()
+    2...
+    >>> e.run_until_stopped()
+    3... 4...
+
+Like above, but called in reverse order.
+
+    >>> e = Elevator(ElevatorLogic(), 3)
+    3...
+    >>> e.call(4, UP)
+    >>> e.call(2, UP)
+    >>> e.run_until_stopped()
+    4...
+    >>> e.run_until_stopped()
+    3... 2...
+
+The elevator is called while it's already moving.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, UP)
+    >>> e.run_until_floor(2)
+    2...
+    >>> e.call(3, UP)
+    >>> e.run_until_stopped()
+    3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+If the elevator is already at, or has passed the floor where it was called, it comes back later.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.call(5, UP)
+    >>> e.run_until_floor(3)
+    2... 3...
+    >>> e.call(3, UP)
+    >>> e.run_until_stopped()
+    4... 5...
+    >>> e.run_until_stopped()
+    4... 3...
+
+Two floors are selected.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(3)
+    >>> e.select_floor(5)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+Like above, but selected in reverse order.
+
+    >>> e = Elevator(ElevatorLogic())
+    1...
+    >>> e.select_floor(5)
+    >>> e.select_floor(3)
+    >>> e.run_until_stopped()
+    2... 3...
+    >>> e.run_until_stopped()
+    4... 5...
+
+Two floors are selected, one above the current floor and one below. The first selection sets the direction, so the second one is completely ignored.
+
+    >>> e = Elevator(ElevatorLogic(), 3)
+    3...
+    >>> e.select_floor(2)
+    >>> e.select_floor(4)
+    >>> e.run_until_stopped()
+    2...
+    >>> e.run_until_stopped()

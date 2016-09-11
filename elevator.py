@@ -80,6 +80,8 @@ class ElevatorLogic(object):
         return not self.has_no_requests()
     def has_no_requests(self):
         return len(self.requests) == 0
+    def has_one_request(self):
+        return len(self.requests) == 1
 
     def on_floor_changed(self):
         """
@@ -87,29 +89,43 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         floor = self.callbacks.current_floor
-
+        # import pdb; pdb.set_trace()
         for request in self.requests :
             if floor == request["floor"] :
+                # import pdb; pdb.set_trace()
                 age = self.should_stop_at_floor(request)
                 if age :
                     self.requests.remove(request)
                     self.callbacks.motor_direction = None
+                    # import pdb; pdb.set_trace()
                     if not self.has_requests():
                         self.direction = None
 
-    def should_stop_at_floor(self, request):
-        final_floor = self.callbacks.current_floor == FLOOR_COUNT - 1
-        wrong_way = self.callbacks.motor_direction == request["direction"]
-        out_request = (request["direction"] == OUT)
-        # import pdb; pdb.set_trace()
-        return (wrong_way or out_request) or final_floor
 
-    def remove_all_requests_at_floor(self, floor):
-        updated_list = []
-        for r in self.requests :
-            if not floor == r["floor"]:
-                updated_list.append(r)
-        self.requests = updated_list
+    def should_stop_at_floor(self, request):
+        # import pdb; pdb.set_trace()
+        return (self.servable_request(request) or not self.requests_beyond_current_floor())
+        return (self.servable_request(request) or self.has_one_request())
+
+    def requests_beyond_current_floor(self):
+        if self.direction == UP:
+            for request in self.requests:
+                if request["floor"] > self.callbacks.current_floor:
+                    return True
+            return False
+            # return self.any(request["floor"] > self.current_floorse for request in self.requests)
+        elif self.direction == DOWN:
+            for request in self.requests:
+                if request["floor"] < self.callbacks.current_floor:
+                    return True
+            return False
+            # return any(request["floor"] < self.callbacks.current_floor for request in self.requests)
+
+    def servable_request(self, request):
+        requested_floor = request["floor"] == self.callbacks.current_floor
+        correct_direction = self.callbacks.motor_direction == request["direction"]
+        out_request = request["direction"] == OUT
+        return requested_floor and (correct_direction or out_request)
 
     def on_ready(self):
         """
@@ -117,6 +133,7 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
+        # import pdb; pdb.set_trace()
         if self.has_no_requests():
             self.direction = None
             return
