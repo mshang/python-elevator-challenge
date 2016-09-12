@@ -78,18 +78,38 @@ class ElevatorLogic(object):
         This lets you know that the elevator has moved one floor up or down.
         You should decide whether or not you want to stop the elevator.
         """
+        fulfilled_requests = []
         floor = self.callbacks.current_floor
         for request in self.requests:
             if floor == request["floor"]:
                 if self.should_stop_at_floor(request):
-                    self.requests.remove(request)
-                    direction = self.callbacks.motor_direction
+                    fulfilled_requests.append(request)
+                    # self.requests.remove(request)
+                    # if request["floor"] == 5 and request["direction"] == DOWN
+                    #     import pdb; pdb.set_trace()
+                    direction = request["direction"]
                     self.callbacks.motor_direction = None
-                    if self.has_no_requests():
-                        self.direction = request["direction"]
+
+        for r in fulfilled_requests:
+            self.requests.remove(r)
+        if self.has_no_requests():
+            self.direction = direction
+        # if self.has_no_requests():
+        #     self.direction = direction
+        # if len(fulfilled_requests) > 0:
+        #     import pdb; pdb.set_trace()
+        #     self.requests.remove(fulfilled_requests)
 
     def should_stop_at_floor(self, request):
-        return (self.servable_request(request) or not self.requests_beyond_current_floor())
+        # import pdb; pdb.set_trace()
+        return (self.servable_request(request) or not self.has_further_requests_in_current_direction())
+
+    def requests_for_removal(self, floor):
+        requests_for_removal = []
+        for request in self.requests:
+            if floor == request["floor"]:
+                requests_for_removal.append(request)
+        return requests_for_removal
 
     def remove_requests_at_floor(self, floor):
         requests_for_removal = []
@@ -100,7 +120,19 @@ class ElevatorLogic(object):
             self.requests.remove(r)
         return len(requests_for_removal)
 
-    def requests_beyond_current_floor(self):
+    def has_further_requests_in_current_direction(self):
+        if self.direction == UP:
+            for request in self.requests:
+                if request["floor"] >= self.callbacks.current_floor and (not request["direction"] == DOWN):
+                    return True
+            return self.higher_requests()
+        elif self.direction == DOWN:
+            for request in self.requests:
+                if request["floor"] <= self.callbacks.current_floor and (not request["direction"] == UP):
+                    return True
+            return False
+
+    def higher_requests(self):
         if self.direction == UP:
             for request in self.requests:
                 if request["floor"] > self.callbacks.current_floor:
@@ -111,6 +143,18 @@ class ElevatorLogic(object):
                 if request["floor"] < self.callbacks.current_floor:
                     return True
             return False
+
+    # def more_requests_in_direction(self):
+    #     if self.direction == UP:
+    #         for request in self.requests:
+    #             if request["floor"] >= self.callbacks.current_floor:
+    #                 return True
+    #         return False
+    #     elif self.direction == DOWN:
+    #         for request in self.requests:
+    #             if request["floor"] <= self.callbacks.current_floor:
+    #                 return True
+    #         return False
 
     def servable_request(self, request):
         requested_floor = request["floor"] == self.callbacks.current_floor
