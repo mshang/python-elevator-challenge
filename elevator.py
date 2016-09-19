@@ -32,16 +32,22 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
-        # if floor == 3:
-        #     import pdb; pdb.set_trace()
-
-        if floor == self.callbacks.current_floor and (self.callbacks.motor_direction == None):
+        if self.stopped_at_floor(floor):
             return
 
-        if (self.direction == UP and floor > self.callbacks.current_floor) or (self.direction == DOWN and floor < self.callbacks.current_floor):
+        if self.floor_is_upcoming(floor):
             self.requests.insert(0, {"floor": floor, "direction": direction})
         else:
             self.requests.append({"floor": floor, "direction": direction})
+
+    def floor_is_upcoming(self, floor):
+        if self.direction == UP:
+            return self.higher_than_current_floor(floor)
+        elif self.direction == DOWN:
+            return self.lower_than_current_floor(floor)
+
+    def stopped_at_floor(self, floor):
+        return self.equal_to_current_floor(floor) and self.callbacks.motor_direction == None
 
     def on_floor_selected(self, floor):
         """
@@ -51,27 +57,32 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
-
-        if (self.direction == UP and floor < self.callbacks.current_floor or self.direction == DOWN and floor > self.callbacks.current_floor):
+        if self.request_is_in_opposite_direction(floor) or self.has_requests_at_floor(floor):
             return
 
-        for request in self.requests:
-            if floor == request["floor"]:
-                return
-
-        if floor > self.callbacks.current_floor:
+        if self.higher_than_current_floor(floor):
             self.direction = UP
-        elif floor < self.callbacks.current_floor:
+        elif self.lower_than_current_floor(floor):
             self.direction = DOWN
         else:
             return
 
         self.requests.insert(0, {"floor": floor, "direction": OUT})
 
-    def has_no_requests(self):
-        return len(self.requests) == 0
-    def has_one_request(self):
-        return len(self.requests) == 1
+    def has_requests_at_floor(self, floor):
+        return len(self.requests_for_floor(floor)) > 0
+
+    def requests_for_floor(self, floor):
+        return filter(lambda request: request["floor"] == floor, self.requests)
+
+    def floor_requested(self, floor):
+        return any(request["floor"] == floor for request in self.requests)
+
+    def request_is_in_opposite_direction(self, floor):
+        if self.direction == UP:
+            return self.lower_than_current_floor(floor)
+        elif self.direction == DOWN:
+            return self.higher_than_current_floor(floor)
 
     def on_floor_changed(self):
         """
@@ -79,88 +90,42 @@ class ElevatorLogic(object):
         You should decide whether or not you want to stop the elevator.
         """
         fulfilled_requests = []
-        floor = self.callbacks.current_floor
-        for request in self.requests:
-            if floor == request["floor"]:
-                if self.should_stop_at_floor(request):
-                    fulfilled_requests.append(request)
-                    # self.requests.remove(request)
-                    # if request["floor"] == 5 and request["direction"] == DOWN
-                    #     import pdb; pdb.set_trace()
-                    direction = request["direction"]
-                    self.callbacks.motor_direction = None
+        for request in self.requests_for_floor(self.callbacks.current_floor):
+            if self.should_stop_at_floor(request):
+                self.callbacks.motor_direction = None
+                fulfilled_requests.append(request)
+                direction = request["direction"]
 
-        for r in fulfilled_requests:
-            self.requests.remove(r)
+        self.remove_requests(fulfilled_requests)
         if self.has_no_requests():
             self.direction = direction
-        # if self.has_no_requests():
-        #     self.direction = direction
-        # if len(fulfilled_requests) > 0:
-        #     import pdb; pdb.set_trace()
-        #     self.requests.remove(fulfilled_requests)
 
     def should_stop_at_floor(self, request):
-        # import pdb; pdb.set_trace()
-        return (self.servable_request(request) or not self.has_further_requests_in_current_direction())
-
-    def requests_for_removal(self, floor):
-        requests_for_removal = []
-        for request in self.requests:
-            if floor == request["floor"]:
-                requests_for_removal.append(request)
-        return requests_for_removal
-
-    def remove_requests_at_floor(self, floor):
-        requests_for_removal = []
-        for request in self.requests:
-            if floor == request["floor"]:
-                requests_for_removal.append(request)
-        for r in requests_for_removal:
-            self.requests.remove(r)
-        return len(requests_for_removal)
-
-    def has_further_requests_in_current_direction(self):
-        if self.direction == UP:
-            for request in self.requests:
-                if request["floor"] >= self.callbacks.current_floor and (not request["direction"] == DOWN):
-                    return True
-            return self.higher_requests()
-        elif self.direction == DOWN:
-            for request in self.requests:
-                if request["floor"] <= self.callbacks.current_floor and (not request["direction"] == UP):
-                    return True
-            return False
-
-    def higher_requests(self):
-        if self.direction == UP:
-            for request in self.requests:
-                if request["floor"] > self.callbacks.current_floor:
-                    return True
-            return False
-        elif self.direction == DOWN:
-            for request in self.requests:
-                if request["floor"] < self.callbacks.current_floor:
-                    return True
-            return False
-
-    # def more_requests_in_direction(self):
-    #     if self.direction == UP:
-    #         for request in self.requests:
-    #             if request["floor"] >= self.callbacks.current_floor:
-    #                 return True
-    #         return False
-    #     elif self.direction == DOWN:
-    #         for request in self.requests:
-    #             if request["floor"] <= self.callbacks.current_floor:
-    #                 return True
-    #         return False
+        return self.servable_request(request) or not self.has_further_servable_requests()
 
     def servable_request(self, request):
-        requested_floor = request["floor"] == self.callbacks.current_floor
         correct_direction = self.callbacks.motor_direction == request["direction"]
         out_request = request["direction"] == OUT
-        return requested_floor and (correct_direction or out_request)
+        return correct_direction or out_request
+
+    def has_further_servable_requests(self):
+        for request in self.requests:
+            if self.equal_to_current_floor(request["floor"]) and self.request_not_in_opposite_direction(request):
+                return True
+        return self.further_requests_in_current_direction()
+
+    def request_not_in_opposite_direction(self, request):
+        return not request["direction"] == self.opposite_direction()
+
+    def opposite_direction(self):
+        if self.direction == UP:
+            return DOWN
+        elif self.direction == DOWN:
+            return UP
+
+    def further_requests_in_current_direction(self):
+        upcoming_floors = filter(lambda request: self.floor_is_upcoming(request["floor"]), self.requests)
+        return len(upcoming_floors) > 0
 
     def on_ready(self):
         """
@@ -169,26 +134,33 @@ class ElevatorLogic(object):
         time to actually move, if necessary.
         """
         if self.has_no_requests():
-            self.reverse_direction()
+            self.direction = None
             return
 
-        request = self.requests[0]
-        floor = request["floor"]
-
-        if floor > self.callbacks.current_floor:
+        next_request_floor = self.requests[0]["floor"]
+        if self.higher_than_current_floor(next_request_floor):
             self.callbacks.motor_direction = UP
             self.direction = UP
-        elif floor < self.callbacks.current_floor:
+        elif self.lower_than_current_floor(next_request_floor):
             self.callbacks.motor_direction = DOWN
             self.direction = DOWN
         else:
-            self.reverse_direction()
+            self.direction = self.opposite_direction()
+            requests_for_removal = self.requests_for_floor(self.callbacks.current_floor)
+            self.remove_requests(requests_for_removal)
 
-        if self.callbacks.motor_direction == None:
-            self.remove_requests_at_floor(self.callbacks.current_floor)
+    def remove_requests(self, requests):
+        for request in requests:
+            self.requests.remove(request)
 
-    def reverse_direction(self):
-        if self.direction == DOWN:
-            self.direction = UP
-        elif self.direction == UP:
-            self.direction = DOWN
+    def has_no_requests(self):
+        return len(self.requests) == 0
+
+    def higher_than_current_floor(self, floor):
+        return floor > self.callbacks.current_floor
+
+    def lower_than_current_floor(self, floor):
+        return floor < self.callbacks.current_floor
+
+    def equal_to_current_floor(self, floor):
+        return floor == self.callbacks.current_floor
