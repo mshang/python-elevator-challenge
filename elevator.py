@@ -20,7 +20,10 @@ class ElevatorLogic(object):
         # Feel free to add any instance variables you want.
         self.destination_floor = None
         self.callbacks = None
-        self.orders = []
+        self.orders = {}
+        self.orders[UP] = []
+        self.orders[DOWN] = []
+        self.current_direction = None
 
     def on_called(self, floor, direction):
         """
@@ -31,8 +34,15 @@ class ElevatorLogic(object):
         floor: the floor that the elevator is being called to
         direction: the direction the caller wants to go, up or down
         """
+
+        target_direction = self.direction_to(floor)
+
+        if self.current_direction is None:
+            # Change direction
+            self.current_direction = target_direction
+
         self.destination_floor = floor
-        self.orders.append(floor)
+        self.orders[direction].insert(0, floor)
 
 
     def on_floor_selected(self, floor):
@@ -43,21 +53,38 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
-        self.destination_floor = floor
-        self.orders.append(floor)
+
+        target_direction = self.direction_to(floor)
+
+        self.orders[target_direction].insert(0, floor)
+
+        # sort the list so closer floors are attended first
+        self.orders[target_direction].sort()
+
+        if self.current_direction is None:
+            self.current_direction = target_direction
+
+        self.destination_floor = self.orders[self.current_direction][0]
 
     def on_floor_changed(self):
         """
         This lets you know that the elevator has moved one floor up or down.
         You should decide whether or not you want to stop the elevator.
         """
+
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
-            if len(self.orders) > 0:
-                self.orders.pop()
-                if len(self.orders) > 0:
-                    self.destination_floor = self.orders.pop()
+            if self.current_direction and self.orders[self.current_direction]:
+                self.destination_floor = self.orders[self.current_direction].pop()
 
+        if self.current_direction and not self.orders[self.current_direction]:
+            other_direction = self.other_direction(self.current_direction)
+            if other_direction and self.orders[other_direction]:
+                self.current_direction = other_direction
+                # Set the new target floor
+                self.destination_floor = self.orders[self.current_direction].pop()
+            else:
+                self.current_direction = None
 
     def on_ready(self):
         """
@@ -69,3 +96,18 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = UP
         elif self.destination_floor < self.callbacks.current_floor:
             self.callbacks.motor_direction = DOWN
+
+    def direction_to(self, floor):
+        direction = None
+        if floor > self.callbacks.current_floor:
+            direction = UP
+        elif floor < self.callbacks.current_floor:
+            direction = DOWN
+        return direction
+
+    def other_direction(self, direction):
+        if UP == direction:
+            return DOWN
+        if DOWN == direction:
+            return UP
+        return None
