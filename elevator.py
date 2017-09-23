@@ -20,6 +20,7 @@ class ElevatorLogic(object):
         # Feel free to add any instance variables you want.
         self.destination_floor = None
         self.callbacks = None
+        self.orders = []
 
     def on_called(self, floor, direction):
         """
@@ -31,6 +32,8 @@ class ElevatorLogic(object):
         direction: the direction the caller wants to go, up or down
         """
         self.destination_floor = floor
+        self.orders.append(floor)
+
 
     def on_floor_selected(self, floor):
         """
@@ -41,6 +44,7 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
         self.destination_floor = floor
+        self.orders.append(floor)
 
     def on_floor_changed(self):
         """
@@ -49,6 +53,11 @@ class ElevatorLogic(object):
         """
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
+            if len(self.orders) > 0:
+                self.orders.pop()
+                if len(self.orders) > 0:
+                    self.destination_floor = self.orders.pop()
+
 
     def on_ready(self):
         """
