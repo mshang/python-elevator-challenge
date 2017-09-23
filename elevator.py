@@ -56,6 +56,9 @@ class ElevatorLogic(object):
 
         target_direction = self.direction_to(floor)
 
+        if self.current_direction and self.current_direction != target_direction:
+            return
+
         self.orders[target_direction].insert(0, floor)
 
         # sort the list so closer floors are attended first
@@ -75,16 +78,19 @@ class ElevatorLogic(object):
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
             if self.current_direction and self.orders[self.current_direction]:
-                self.destination_floor = self.orders[self.current_direction].pop()
+                self.orders[self.current_direction].pop(0)
+                if self.orders[self.current_direction]:
+                    self.destination_floor = self.orders[self.current_direction][0]
 
         if self.current_direction and not self.orders[self.current_direction]:
             other_direction = self.other_direction(self.current_direction)
             if other_direction and self.orders[other_direction]:
                 self.current_direction = other_direction
                 # Set the new target floor
-                self.destination_floor = self.orders[self.current_direction].pop()
-            else:
-                self.current_direction = None
+                if self.orders[self.current_direction]:
+                    self.destination_floor = self.orders[self.current_direction][0]
+            #else:
+            #    self.current_direction = None
 
     def on_ready(self):
         """
@@ -92,6 +98,7 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
+        #print "on ready: dest floor: %d" % self.destination_floor
         if self.destination_floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
         elif self.destination_floor < self.callbacks.current_floor:
