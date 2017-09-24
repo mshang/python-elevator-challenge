@@ -37,17 +37,21 @@ class ElevatorLogic(object):
         direction: the direction the caller wants to go, up or down
         """
 
-        target_direction = self.direction_to(floor)
+        direction_to_floor = self.direction_to(floor)
 
         if self.current_direction is None:
             # Change direction
-            self.current_direction = target_direction
+            self.current_direction = direction_to_floor
 
         if self.callbacks.current_floor != floor:
             self.orders[direction].insert(0, floor)
             # Reorder
-            self.orders[direction].sort(reverse=direction == DOWN)
-            self.destination_floor = self.orders[direction][0]
+            self.orders[UP].sort()
+            self.orders[DOWN].sort(reverse=True)
+            if self.current_direction == UP and self.orders[UP]:
+                self.destination_floor = self.orders[UP][0]
+            else:
+                self.destination_floor = self.orders[direction][0]
         else:
             # Missed the boat, come back later
             self.orders[self.other_direction(self.current_direction)].insert(0, floor)
