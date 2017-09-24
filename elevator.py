@@ -57,11 +57,17 @@ class ElevatorLogic(object):
 
         direction_to_floor = self.direction_to(floor)
 
-        if self.bounded_direction and direction_to_floor == self.bounded_direction:
-            self.current_direction = self.bounded_direction
-            self.bounded_direction = None
+        if self.bounded_direction:
+            if direction_to_floor == self.bounded_direction:
+                self.current_direction = self.bounded_direction
+                self.bounded_direction = None
+            else:
+                self.bounded_direction = None
+                return
 
         if self.current_direction and self.current_direction != direction_to_floor:
+            # Set it to wait for requests to move to the other direction
+            self.current_direction = self.other_direction(self.current_direction)
             return
 
         self.orders[direction_to_floor].insert(0, floor)
@@ -84,7 +90,13 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = None
             self.orders[self.current_direction].pop(0)
             if self.orders[self.current_direction]:
-                self.destination_floor = self.orders[self.current_direction][0]
+                next_destination = self.orders[self.current_direction][0]
+                if next_destination != self.callbacks.current_floor:
+                    self.destination_floor = next_destination
+                else:
+                    self.orders[self.current_direction].pop(0)  # drop it, already there
+                    self.destination_floor = None
+                    self.bounded_direction = self.current_direction
             else:
                 self.bounded_direction = self.current_direction
 
@@ -99,10 +111,6 @@ class ElevatorLogic(object):
         if self.is_idle():
             self.current_direction = None  # Elevator is idle
 
-    def is_idle(self):
-        return not self.orders[UP] and not self.orders[DOWN]
-
-
     def on_ready(self):
         """
         This is called when the elevator is ready to go.
@@ -114,6 +122,8 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = UP
         elif self.destination_floor < self.callbacks.current_floor:
             self.callbacks.motor_direction = DOWN
+        else:
+            self.bounded_direction = None
 
     def direction_to(self, floor):
         direction = None
@@ -122,6 +132,9 @@ class ElevatorLogic(object):
         elif floor < self.callbacks.current_floor:
             direction = DOWN
         return direction
+
+    def is_idle(self):
+        return not self.orders[UP] and not self.orders[DOWN]
 
     @staticmethod
     def other_direction(direction):
