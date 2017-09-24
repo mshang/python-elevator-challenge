@@ -89,8 +89,9 @@ class ElevatorLogic(object):
                 # Set the new target floor
                 if self.orders[self.current_direction]:
                     self.destination_floor = self.orders[self.current_direction][0]
-            #else:
-            #    self.current_direction = None
+
+        if not self.orders[UP] and not self.orders[DOWN]:
+            self.current_direction = None  # Elevator is idle
 
     def on_ready(self):
         """
@@ -98,7 +99,7 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
-        #print "on ready: dest floor: %d" % self.destination_floor
+        # print "on ready: dest floor: %d" % self.destination_floor
         if self.destination_floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
         elif self.destination_floor < self.callbacks.current_floor:
