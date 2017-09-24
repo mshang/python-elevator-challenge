@@ -123,7 +123,8 @@ class ElevatorLogic(object):
             direction = DOWN
         return direction
 
-    def other_direction(self, direction):
+    @staticmethod
+    def other_direction(direction):
         if UP == direction:
             return DOWN
         if DOWN == direction:
