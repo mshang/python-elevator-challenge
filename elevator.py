@@ -44,8 +44,10 @@ class ElevatorLogic(object):
             self.current_direction = target_direction
 
         if self.callbacks.current_floor != floor:
-            self.destination_floor = floor
             self.orders[direction].insert(0, floor)
+            # Reorder
+            self.orders[direction].sort(reverse=direction == DOWN)
+            self.destination_floor = self.orders[direction][0]
         else:
             # Missed the boat, come back later
             self.orders[self.other_direction(self.current_direction)].insert(0, floor)
