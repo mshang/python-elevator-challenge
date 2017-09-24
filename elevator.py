@@ -2,6 +2,7 @@ UP = 1
 DOWN = 2
 FLOOR_COUNT = 6
 
+
 class ElevatorLogic(object):
     """
     An incorrect implementation. Can you make it pass all the tests?
@@ -42,9 +43,14 @@ class ElevatorLogic(object):
             # Change direction
             self.current_direction = target_direction
 
-        self.destination_floor = floor
-        self.orders[direction].insert(0, floor)
+        if self.callbacks.current_floor != floor:
+            self.destination_floor = floor
+            self.orders[direction].insert(0, floor)
+        else:
+            # Missed the boat, come back later
+            self.orders[self.other_direction(self.current_direction)].insert(0, floor)
 
+        # print "on called. Status: ", self.status()
 
     def on_floor_selected(self, floor):
         """
@@ -56,6 +62,10 @@ class ElevatorLogic(object):
         """
 
         direction_to_floor = self.direction_to(floor)
+
+        if direction_to_floor is None:
+            # print "missed the boat. status: %s " % self.status()
+            return
 
         if self.bounded_direction:
             if direction_to_floor == self.bounded_direction:
@@ -111,6 +121,8 @@ class ElevatorLogic(object):
         if self.is_idle():
             self.current_direction = None  # Elevator is idle
 
+        # print "on_changed. status: %s" % self.status()
+
     def on_ready(self):
         """
         This is called when the elevator is ready to go.
@@ -124,6 +136,8 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = DOWN
         else:
             self.bounded_direction = None
+
+        # print "on ready. status: %s" % self.status()
 
     def direction_to(self, floor):
         direction = None
@@ -143,3 +157,23 @@ class ElevatorLogic(object):
         if DOWN == direction:
             return UP
         return None
+
+    def status(self):
+        def direction_str(direction):
+            if UP == direction:
+                return "UP"
+            elif DOWN == direction:
+                return "DOWN"
+            else:
+                return "None"
+
+        return """Current direction: %s
+               Current floor: %d
+               Destination floor: %d
+               orders UP: %s
+               orders DOWN: %s
+               """ % (direction_str(self.current_direction),
+                      self.callbacks.current_floor,
+                      self.destination_floor,
+                      self.orders[UP],
+                      self.orders[DOWN])
