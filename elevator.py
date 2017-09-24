@@ -104,7 +104,10 @@ class ElevatorLogic(object):
 
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
-            self.orders[self.current_direction].pop(0)
+            if self.orders[self.current_direction]:
+                self.orders[self.current_direction].pop(0)
+            else:
+                self.orders[self.other_direction(self.current_direction)].pop(0) #something had to be served (
             if self.orders[self.current_direction]:
                 next_destination = self.orders[self.current_direction][0]
                 if next_destination != self.callbacks.current_floor:
