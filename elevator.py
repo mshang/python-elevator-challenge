@@ -24,6 +24,7 @@ class ElevatorLogic(object):
         self.orders[UP] = []
         self.orders[DOWN] = []
         self.current_direction = None
+        self.bounded_direction = None
 
     def on_called(self, floor, direction):
         """
@@ -54,18 +55,22 @@ class ElevatorLogic(object):
         floor: the floor that was requested
         """
 
-        target_direction = self.direction_to(floor)
+        direction_to_floor = self.direction_to(floor)
 
-        if self.current_direction and self.current_direction != target_direction:
+        if self.bounded_direction and direction_to_floor == self.bounded_direction:
+            self.current_direction = self.bounded_direction
+            self.bounded_direction = None
+
+        if self.current_direction and self.current_direction != direction_to_floor:
             return
 
-        self.orders[target_direction].insert(0, floor)
+        self.orders[direction_to_floor].insert(0, floor)
 
         # sort the list so closer floors are attended first
-        self.orders[target_direction].sort()
+        self.orders[direction_to_floor].sort()
 
         if self.current_direction is None:
-            self.current_direction = target_direction
+            self.current_direction = direction_to_floor
 
         self.destination_floor = self.orders[self.current_direction][0]
 
@@ -77,12 +82,13 @@ class ElevatorLogic(object):
 
         if self.destination_floor == self.callbacks.current_floor:
             self.callbacks.motor_direction = None
-            if self.current_direction and self.orders[self.current_direction]:
-                self.orders[self.current_direction].pop(0)
-                if self.orders[self.current_direction]:
-                    self.destination_floor = self.orders[self.current_direction][0]
+            self.orders[self.current_direction].pop(0)
+            if self.orders[self.current_direction]:
+                self.destination_floor = self.orders[self.current_direction][0]
+            else:
+                self.bounded_direction = self.current_direction
 
-        if self.current_direction and not self.orders[self.current_direction]:
+        if not self.orders[self.current_direction]:
             other_direction = self.other_direction(self.current_direction)
             if other_direction and self.orders[other_direction]:
                 self.current_direction = other_direction
@@ -90,8 +96,12 @@ class ElevatorLogic(object):
                 if self.orders[self.current_direction]:
                     self.destination_floor = self.orders[self.current_direction][0]
 
-        if not self.orders[UP] and not self.orders[DOWN]:
+        if self.is_idle():
             self.current_direction = None  # Elevator is idle
+
+    def is_idle(self):
+        return not self.orders[UP] and not self.orders[DOWN]
+
 
     def on_ready(self):
         """
