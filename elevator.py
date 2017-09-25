@@ -2,6 +2,7 @@ UP = 1
 DOWN = 2
 FLOOR_COUNT = 6
 
+import time
 
 class ElevatorLogic(object):
     """
@@ -16,6 +17,14 @@ class ElevatorLogic(object):
     `current_floor` property of the `callbacks` object, and you can move the
     elevator by setting the `motor_direction` property. See below for how this is done.
     """
+
+    class Call(object):
+        def __init__(self, floor, time):
+            self.floor = floor
+            self.time = time
+
+        def __repr__(self):
+            return "%d" % self.floor
 
     def __init__(self):
         # Feel free to add any instance variables you want.
@@ -44,19 +53,36 @@ class ElevatorLogic(object):
             self.current_direction = direction_to_floor
 
         if self.callbacks.current_floor != floor:
-            self.orders[direction].insert(0, floor)
+            self.index(direction, floor)
             # Reorder
-            self.orders[UP].sort()
-            self.orders[DOWN].sort(reverse=True)
+            self.sort(UP)
+            self.sort(DOWN)
             if self.current_direction == UP and self.orders[UP]:
-                self.destination_floor = self.orders[UP][0]
+                self.destination_floor = self.orders[UP][0].floor
             else:
-                self.destination_floor = self.orders[direction][0]
+                self.destination_floor = self.orders[direction][0].floor
         else:
             # Missed the boat, come back later
-            self.orders[self.other_direction(self.current_direction)].insert(0, floor)
+            self.index(self.other_direction(self.current_direction), floor)
 
-        # print "on called. Status: ", self.status()
+        # print "direction to floor: ", self.direction_str(direction_to_floor)
+        self.log("on called")
+
+    def index(self, direction, floor):
+        self.orders[direction].insert(0, self.Call(floor, time.time()))
+
+    def sort(self, direction):
+        if direction == UP:
+            if self.callbacks.motor_direction:
+                self.orders[UP].sort(key=lambda x: x.floor)
+            elif all(x.floor > self.callbacks.current_floor for x in self.orders[UP]):
+                self.orders[UP].sort(key=lambda x: x.floor)
+            else:
+                self.orders[UP].sort(key=lambda x: x.time)
+        elif direction == DOWN:
+            self.orders[DOWN].sort(key=lambda x: x.time, reverse=True)
+        else:
+            pass
 
     def on_floor_selected(self, floor):
         """
@@ -86,15 +112,18 @@ class ElevatorLogic(object):
             self.current_direction = self.other_direction(self.current_direction)
             return
 
-        self.orders[direction_to_floor].insert(0, floor)
+        self.index(direction_to_floor, floor)
 
         # sort the list so closer floors are attended first
-        self.orders[direction_to_floor].sort()
+        # self.orders[direction_to_floor].sort()
+        self.sort(direction_to_floor)
 
         if self.current_direction is None:
             self.current_direction = direction_to_floor
 
-        self.destination_floor = self.orders[self.current_direction][0]
+        self.destination_floor = self.orders[self.current_direction][0].floor
+
+        self.log("on floor selected")
 
     def on_floor_changed(self):
         """
@@ -107,9 +136,9 @@ class ElevatorLogic(object):
             if self.orders[self.current_direction]:
                 self.orders[self.current_direction].pop(0)
             else:
-                self.orders[self.other_direction(self.current_direction)].pop(0) #something had to be served (
+                self.orders[self.other_direction(self.current_direction)].pop(0)  # something had to be served (
             if self.orders[self.current_direction]:
-                next_destination = self.orders[self.current_direction][0]
+                next_destination = self.orders[self.current_direction][0].floor
                 if next_destination != self.callbacks.current_floor:
                     self.destination_floor = next_destination
                 else:
@@ -125,12 +154,12 @@ class ElevatorLogic(object):
                 self.current_direction = other_direction
                 # Set the new target floor
                 if self.orders[self.current_direction]:
-                    self.destination_floor = self.orders[self.current_direction][0]
+                    self.destination_floor = self.orders[self.current_direction][0].floor
 
         if self.is_idle():
             self.current_direction = None  # Elevator is idle
 
-        # print "on_changed. status: %s" % self.status()
+        self.log("on_changed")
 
     def on_ready(self):
         """
@@ -146,7 +175,7 @@ class ElevatorLogic(object):
         else:
             self.bounded_direction = None
 
-        # print "on ready. status: %s" % self.status()
+        self.log("on ready")
 
     def direction_to(self, floor):
         direction = None
@@ -167,22 +196,27 @@ class ElevatorLogic(object):
             return UP
         return None
 
-    def status(self):
-        def direction_str(direction):
-            if UP == direction:
-                return "UP"
-            elif DOWN == direction:
-                return "DOWN"
-            else:
-                return "None"
+    @staticmethod
+    def direction_str(direction):
+        if UP == direction:
+            return "UP"
+        elif DOWN == direction:
+            return "DOWN"
+        else:
+            return "None"
 
+    def status(self):
         return """Current direction: %s
                Current floor: %d
                Destination floor: %d
                orders UP: %s
                orders DOWN: %s
-               """ % (direction_str(self.current_direction),
+               """ % (self.direction_str(self.current_direction),
                       self.callbacks.current_floor,
                       self.destination_floor,
                       self.orders[UP],
                       self.orders[DOWN])
+
+    def log(self, msg):
+        pass
+        # print "%s. status: %s" % (msg, self.status())
