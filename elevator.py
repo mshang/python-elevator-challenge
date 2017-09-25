@@ -96,20 +96,24 @@ class ElevatorLogic(object):
         direction_to_floor = self.direction_to(floor)
 
         if direction_to_floor is None:
-            # print "missed the boat. status: %s " % self.status()
+            self.log("missed the boat")
             return
 
         if self.bounded_direction:
+            self.log("floor selected. bounded direction detected. direction to floor %s"
+                     % self.direction_str(direction_to_floor))
             if direction_to_floor == self.bounded_direction:
                 self.current_direction = self.bounded_direction
                 self.bounded_direction = None
             else:
+                self.log("floor selection ignored")
                 self.bounded_direction = None
                 return
 
         if self.current_direction and self.current_direction != direction_to_floor:
             # Set it to wait for requests to move to the other direction
             self.current_direction = self.other_direction(self.current_direction)
+            self.log("floor selection ignored")
             return
 
         self.index(direction_to_floor, floor)
@@ -132,11 +136,14 @@ class ElevatorLogic(object):
         """
 
         if self.destination_floor == self.callbacks.current_floor:
+            self.log("on change. Destiny %d reached" % self.destination_floor)
             self.callbacks.motor_direction = None
+
             if self.orders[self.current_direction]:
                 self.orders[self.current_direction].pop(0)
             else:
                 self.orders[self.other_direction(self.current_direction)].pop(0)  # something had to be served (
+
             if self.orders[self.current_direction]:
                 next_destination = self.orders[self.current_direction][0].floor
                 if next_destination != self.callbacks.current_floor:
@@ -145,6 +152,17 @@ class ElevatorLogic(object):
                     self.orders[self.current_direction].pop(0)  # drop it, already there
                     self.destination_floor = None
                     self.bounded_direction = self.current_direction
+
+            # Inspect the other queue, if floor matches current floor, bind to that direction
+            # other_direction = self.other_direction(self.current_direction)
+            # if self.orders[other_direction]:
+            #     floor = self.orders[other_direction][0].floor
+            #     if floor == self.callbacks.current_floor:
+            #         # Don't serve that
+            #         self.orders[other_direction].pop(0)
+            #         # self.bounded_direction = other_direction
+            #         # pass
+
             else:
                 self.bounded_direction = self.current_direction
 
@@ -206,17 +224,20 @@ class ElevatorLogic(object):
             return "None"
 
     def status(self):
-        return """Current direction: %s
-               Current floor: %d
-               Destination floor: %d
-               orders UP: %s
-               orders DOWN: %s
+        return """\
+   Current direction: %s
+   Current floor: %d
+   Destination floor: %d
+   Bounded direction: %s
+   orders UP: %s
+   orders DOWN: %s
                """ % (self.direction_str(self.current_direction),
                       self.callbacks.current_floor,
                       self.destination_floor,
+                      self.direction_str(self.bounded_direction),
                       self.orders[UP],
                       self.orders[DOWN])
 
     def log(self, msg):
+        # print "%s. \nstatus:\n%s" % (msg, self.status())
         pass
-        # print "%s. status: %s" % (msg, self.status())
