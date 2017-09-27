@@ -181,7 +181,7 @@ class ElevatorLogic(object):
             else:
                 self.bounded_direction = self.current_direction
 
-        if not self.orders[self.current_direction]:
+        if self.current_direction and not self.orders[self.current_direction]:
             other_direction = self.other_direction(self.current_direction)
             if other_direction and self.orders[other_direction]:
                 self.current_direction = other_direction
@@ -241,8 +241,8 @@ class ElevatorLogic(object):
     def status(self):
         return """\
    Current direction: %s
-   Current floor: %d
-   Destination floor: %d
+   Current floor: %s
+   Destination floor: %s
    Bounded direction: %s
    orders UP: %s
    orders DOWN: %s
@@ -254,5 +254,5 @@ class ElevatorLogic(object):
                       self.orders[DOWN])
 
     def log(self, msg):
-        # print "%s. \nstatus:\n%s" % (msg, self.status())
+        print "%s. \nstatus:\n%s" % (msg, self.status())
         pass
