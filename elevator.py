@@ -70,7 +70,7 @@ class ElevatorLogic(object):
 
     def index(self, direction, floor):
         if not direction:
-            return 
+            return
         self.orders[direction].insert(0, self.Call(floor, time.time()))
 
     def sort(self, direction):
@@ -117,14 +117,28 @@ class ElevatorLogic(object):
                 self.current_direction = self.bounded_direction
                 self.bounded_direction = None
             else:
-                self.log("floor selection ignored")
+                self.log("floor selection ignored. Mismatch between bounded direction and direction to floor selected")
                 # self.bounded_direction = None
                 return
 
         if self.current_direction and self.current_direction != direction_to_floor:
             # Set it to wait for requests to move to the other direction
-            self.current_direction = self.other_direction(self.current_direction)
-            self.log("floor selection ignored")
+            other_direction = self.other_direction(self.current_direction)
+            self.current_direction = other_direction
+            self.log("""\
+                     floor selection ignored.
+                     floor selected: %d
+                     Direction to floor: %s.
+                     Must wait for requests to move to the other direction"""
+                     % (floor, self.direction_str(direction_to_floor)))
+            # Clear for the next call
+            if self.callbacks.current_floor == self.destination_floor:
+                self.log("Clear for the next call")
+                # Reverse again
+                other_direction = self.other_direction(other_direction)
+                if self.orders[other_direction] and self.orders[other_direction][0].floor == self.callbacks.current_floor:
+                    self.orders[other_direction].pop(0)
+                self.current_direction = None
             return
 
         self.index(direction_to_floor, floor)
