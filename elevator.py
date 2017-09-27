@@ -46,6 +46,11 @@ class ElevatorLogic(object):
         direction: the direction the caller wants to go, up or down
         """
 
+        if not self.valid_floor(floor) or direction not in [UP, DOWN]:
+            return
+
+
+
         direction_to_floor = self.direction_to(floor)
 
         if self.current_direction is None:
@@ -86,6 +91,10 @@ class ElevatorLogic(object):
         else:
             pass
 
+    @staticmethod
+    def valid_floor(floor):
+        return floor >= 1 or floor <= FLOOR_COUNT
+
     def on_floor_selected(self, floor):
         """
         This is called when somebody on the elevator chooses a floor.
@@ -94,6 +103,10 @@ class ElevatorLogic(object):
 
         floor: the floor that was requested
         """
+
+        if not self.valid_floor(floor):
+            return
+
 
         direction_to_floor = self.direction_to(floor)
 
@@ -164,12 +177,13 @@ class ElevatorLogic(object):
             self.log("on change. Destiny %d reached" % self.destination_floor)
             self.callbacks.motor_direction = None
 
-            if self.orders[self.current_direction]:
+            if self.current_direction and self.orders[self.current_direction]:
                 self.orders[self.current_direction].pop(0)
             else:
-                self.orders[self.other_direction(self.current_direction)].pop(0)  # something had to be served (
+                if self.current_direction and self.orders[self.other_direction(self.current_direction)]:
+                    self.orders[self.other_direction(self.current_direction)].pop(0)  # something had to be served (
 
-            if self.orders[self.current_direction]:
+            if self.current_direction and self.orders[self.current_direction]:
                 next_destination = self.orders[self.current_direction][0].floor
                 if next_destination != self.callbacks.current_floor:
                     self.destination_floor = next_destination
@@ -192,6 +206,17 @@ class ElevatorLogic(object):
         if self.is_idle():
             self.current_direction = None  # Elevator is idle
 
+        if self.callbacks.current_floor <= 1 and self.callbacks.motor_direction == DOWN:
+            # self.callbacks.current_floor = 1
+            self.callbacks.motor_direction = None
+            self.current_direction = None
+            self.bounded_direction = None
+
+        if self.callbacks.motor_direction == UP and self.callbacks.current_floor == FLOOR_COUNT:
+            self.callbacks.motor_direction = DOWN
+            self.bounded_direction = None
+            self.destination_floor = FLOOR_COUNT
+
         self.log("on_changed")
 
     def on_ready(self):
@@ -200,6 +225,13 @@ class ElevatorLogic(object):
         Maybe passengers have embarked and disembarked. The doors are closed,
         time to actually move, if necessary.
         """
+
+        if self.destination_floor and not self.valid_floor(self.destination_floor):
+            self.destination_floor = None
+            self.callbacks.motor_direction = None
+
+
+
         # print "on ready: dest floor: %d" % self.destination_floor
         if self.destination_floor > self.callbacks.current_floor:
             self.callbacks.motor_direction = UP
@@ -207,6 +239,15 @@ class ElevatorLogic(object):
             self.callbacks.motor_direction = DOWN
         else:
             self.bounded_direction = None
+
+        if self.callbacks.motor_direction == DOWN and self.callbacks.current_floor == 1:
+            self.callbacks.motor_direction = None
+
+        if self.callbacks.motor_direction == UP and self.callbacks.current_floor == FLOOR_COUNT:
+            self.callbacks.motor_direction = None
+            self.bounded_direction = None
+            self.destination_floor = None
+
 
         self.log("on ready")
 
@@ -254,5 +295,5 @@ class ElevatorLogic(object):
                       self.orders[DOWN])
 
     def log(self, msg):
-        print "%s. \nstatus:\n%s" % (msg, self.status())
+        # print "%s. \nstatus:\n%s" % (msg, self.status())
         pass
