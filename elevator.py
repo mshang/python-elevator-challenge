@@ -99,15 +99,24 @@ class ElevatorLogic(object):
             self.log("missed the boat")
             return
 
+        # Check the other queue for duplicates
+        other_direction = self.other_direction(direction_to_floor)
+        if self.orders[other_direction]:
+            _floor = self.orders[other_direction][0].floor
+            if _floor == floor:
+                # Serve that, but not this floor request (line 485)
+                return
+
         if self.bounded_direction:
-            self.log("floor selected. bounded direction detected. direction to floor %s"
-                     % self.direction_str(direction_to_floor))
+            self.log("floor selected. bounded direction detected. direction to floor %d: %s"
+                     % (floor, self.direction_str(direction_to_floor))
+                     )
             if direction_to_floor == self.bounded_direction:
                 self.current_direction = self.bounded_direction
                 self.bounded_direction = None
             else:
                 self.log("floor selection ignored")
-                self.bounded_direction = None
+                # self.bounded_direction = None
                 return
 
         if self.current_direction and self.current_direction != direction_to_floor:
@@ -152,16 +161,6 @@ class ElevatorLogic(object):
                     self.orders[self.current_direction].pop(0)  # drop it, already there
                     self.destination_floor = None
                     self.bounded_direction = self.current_direction
-
-            # Inspect the other queue, if floor matches current floor, bind to that direction
-            # other_direction = self.other_direction(self.current_direction)
-            # if self.orders[other_direction]:
-            #     floor = self.orders[other_direction][0].floor
-            #     if floor == self.callbacks.current_floor:
-            #         # Don't serve that
-            #         self.orders[other_direction].pop(0)
-            #         # self.bounded_direction = other_direction
-            #         # pass
 
             else:
                 self.bounded_direction = self.current_direction
