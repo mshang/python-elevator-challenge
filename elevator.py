@@ -69,6 +69,8 @@ class ElevatorLogic(object):
         self.log("on called")
 
     def index(self, direction, floor):
+        if not direction:
+            return 
         self.orders[direction].insert(0, self.Call(floor, time.time()))
 
     def sort(self, direction):
