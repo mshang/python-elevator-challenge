@@ -38,7 +38,7 @@ The logic delegate can respond by setting the elevator to move up, move down, or
     >>> class Elevator(Elevator):
     ...     def __init__(self, logic_delegate, starting_floor=1):
     ...         self._current_floor = starting_floor
-    ...         print "%s..." % starting_floor,
+    ...         print(f"{starting_floor}...")
     ...         self._motor_direction = None
     ...         self._logic_delegate = logic_delegate
     ...         self._logic_delegate.callbacks = self.Callbacks(self)
@@ -71,7 +71,7 @@ The simulation runs in steps. Each time step consists of the elevator moving a s
     ... 
     ...        if delta:
     ...            self._current_floor = self._current_floor + delta
-    ...            print "%s..." % self._current_floor,
+    ...            print(f"{self._current_floor}...")
     ...            self._logic_delegate.on_floor_changed()
     ...        else:
     ...            self._logic_delegate.on_ready()
