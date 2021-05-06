@@ -274,7 +274,7 @@ No amount of legal moves should compel the elevator to enter an illegal state. H
     >>> import random
     >>> e = Elevator(ElevatorLogic())
     1...
-    >>> try: print '-',  # doctest:+ELLIPSIS
+    >>> try: print('-')  # doctest:+ELLIPSIS
     ... finally:
     ...     for i in range(100000):  
     ...         r = random.randrange(6)
