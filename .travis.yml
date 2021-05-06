@@ -1,4 +1,4 @@
 language: python
 python:
-  - "2.7"
+  - "3"
 script: python -m doctest README.md
